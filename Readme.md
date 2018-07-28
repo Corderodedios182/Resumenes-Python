@@ -16,4 +16,4 @@ Es un repositorio sobre conceptos Basicos para Python.
 
 -Limpieza de Datos
 
--Introduccion al Paquete Pandas
+-Fundamentos Pandas
