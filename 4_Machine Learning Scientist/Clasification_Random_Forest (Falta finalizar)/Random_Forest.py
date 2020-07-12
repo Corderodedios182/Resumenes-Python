@@ -27,6 +27,9 @@ base.head()
 base.shape
 list(enumerate(base.keys()))
 
+sns.set(style="ticks")
+sns.pairplot(base.iloc[:,2:6])
+
 #Vizualitation
 fig = sns.scatterplot(x = base['radius_mean'],
                   y = base['concave points_mean'],
@@ -56,7 +59,7 @@ y_train = base.loc[y_train,'diagnosis']
 y_test = base.loc[y_test,'diagnosis']
 
 # 2 - Train your first classification tree
-dt = DecisionTreeClassifier(max_depth=2, random_state=1)
+dt = DecisionTreeClassifier(max_depth=2, random_state=5)
 dt
 
 # 3 - Fit dt to the training set
