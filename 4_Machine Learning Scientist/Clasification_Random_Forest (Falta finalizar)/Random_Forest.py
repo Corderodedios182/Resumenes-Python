@@ -27,49 +27,52 @@ base.head()
 base.shape
 list(enumerate(base.keys()))
 
+#Grafica de variables
 sns.set(style="ticks")
 sns.pairplot(base.iloc[:,2:6])
 
-#Vizualitation
+#Vizualisacion de la clasificacion actual
 fig = sns.scatterplot(x = base['radius_mean'],
-                  y = base['concave points_mean'],
-                  hue = base['diagnosis'],
-                  style = base['diagnosis']).set_title("Diagnostico tumores")
+                      y = base['concave points_mean'],
+                      hue = base['diagnosis'],
+                      style = base['diagnosis']).set_title("Diagnostico tumores")
 
-# -- Train your first classification --# 
+# -- Entrenando nuestra primera clasificacion --# 
 
 ##############################################
 # Logistic regression vs classification tree #
 ##############################################
 
     #Tree#
-
-# Split dataset into 80% train, 20% test
-X = base.loc[:,['radius_mean','concave points_mean']] #Variables que nos apoyaran a tomar un diagnostico
+#Variables que nos apoyaran a tomar un diagnostico
+X = base.loc[:,['radius_mean','concave points_mean']] 
 y = range(569)
 
-#1 - Dividiendo el conjunto de datos entrenamiento y test.
-X_train, X_test, y_train, y_test= train_test_split(X, y,test_size=0.2,random_state=1)
+#1 - Dividiendo el conjunto de datos entrenamiento y test. 80% - 20% 
+X_train, X_test, y_train, y_test = train_test_split(X, y,test_size=0.2,random_state=1)
 
+#Ingenieria de Variables - Convirtiendo la etiqueta categorica a binaria
 lb_make = LabelEncoder()
-base['diagnosis'] = lb_make.fit_transform(base['diagnosis']) #Convertir etiqueta cateorica a binaria
+base['diagnosis'] = lb_make.fit_transform(base['diagnosis'])
 
 #Seleccionando datos entrenamiento
 y_train = base.loc[y_train,'diagnosis']
 y_test = base.loc[y_test,'diagnosis']
 
-# 2 - Train your first classification tree
-dt = DecisionTreeClassifier(max_depth=2, random_state=5)
+# 2 - Creando una instancia de un arbol
+#max_depth = profundidad del arbol
+#random_state = Controla la aleatoriedad del estimador
+dt = DecisionTreeClassifier(max_depth=2, random_state=5) 
 dt
 
-# 3 - Fit dt to the training set
+# 3 - Ajuste a los datos de entrenamiento
 dt.fit(X_train, y_train)
 
-# 4 - Predict test set labels
+# 4 - Prediccion del conjutno de prueba
 y_pred_tree = dt.predict(X_test)
 print(y_pred_tree)
 
-# 5 - Compute test set accuracy
+# 5 - Medicion de la presicion
 acc = accuracy_score(y_test, y_pred_tree)
 print("Test set accuracy: {:.2f}".format(acc))
 
@@ -85,23 +88,23 @@ viz.view()
 
     #LogisticRegression
 
-# 2 - Train your first classification LogisticRegression
+# 2 - Entrenando con LogisticRegression
 logreg = LogisticRegression(random_state=1)
 
-# 3 - Fit logreg to the training set
+# 3 - Ajuste a los datos de entrenamiento
 logreg.fit(X_train, y_train)
 
-# 4 - Predict test set labels
+# 4 - Prediccion al conjunto de Prueba
 y_pred_log = logreg.predict(X_test)
 
-# 5 - Compute test set accuracy
+# 5 - Midiendo la presicion
 acc = accuracy_score(y_test, y_pred_log)
 print("Test set accuracy: {:.2f}".format(acc))
 
-# Define a list called clfs containing the two classifiers logreg and dt
+# Definiendo en una lista los 2 clasificadores
 clfs = [dt, logreg]
 
-#Function graph regions models
+#Funcion de apoyo para graficar la region de desicion
 def plot_labeled_decision_regions(X_test , y_test, clfs):
 
     gs = gridspec.GridSpec(2, 2)
@@ -126,7 +129,7 @@ def plot_labeled_decision_regions(X_test , y_test, clfs):
     
     plt.show()
 
-# Review the decision regions of the two classifiers
+# Revisando las regiones de desicion de los clasificadores
 plot_labeled_decision_regions(X_train, y_train, clfs)
 
 #Criterios de entropia y gini
