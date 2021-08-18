@@ -132,6 +132,9 @@ def plot_labeled_decision_regions(X_test , y_test, clfs):
 # Revisando las regiones de desicion de los clasificadores
 plot_labeled_decision_regions(X_train, y_train, clfs)
 
+# ¿Como sabe un arbol que funcion y que punto dividir? 
+# Lo hace maximizando la ganancia de informacion (IG)
+
 #Criterios de entropia y gini
 
 # Instantiate dt_entropy, set 'entropy' as the information criterion
