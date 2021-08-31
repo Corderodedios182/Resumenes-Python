@@ -143,4 +143,12 @@ dt_entropy = DecisionTreeClassifier(max_depth=8, criterion='entropy', random_sta
 # Fit dt_entropy to the training set
 dt_entropy.fit(X_train, y_train)
 
+#Decimos que el modelo de machine learning ha aprendido «de memoria» cuando:
+
+#el error de entrenamiento es bajo
+#el error de generalización es alto
+
+
+
+
 
