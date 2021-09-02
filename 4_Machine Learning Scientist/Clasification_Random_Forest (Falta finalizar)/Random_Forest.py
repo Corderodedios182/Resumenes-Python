@@ -10,6 +10,7 @@ import pandas as pd
 import seaborn as sns
 
 from sklearn.tree import DecisionTreeClassifier # Import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeRegressor # Import DecisionTreeClassifier
 from sklearn.linear_model import  LogisticRegression 
 from sklearn.model_selection import train_test_split # Import train_test_split
 from sklearn.metrics import accuracy_score # Import accuracy_score
@@ -148,7 +149,43 @@ dt_entropy.fit(X_train, y_train)
 #el error de entrenamiento es bajo
 #el error de generalización es alto
 
+#Error Generalizado
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error as MSE
+from sklearn.model_selection import cross_val_score
 
+SEED = 1
 
+X_train, X_test, y_train, y_test = train_test_split(X, y,test_size=0.2,random_state=1)
 
+# Instantiate a DecisionTreeRegressor dt
+dt = DecisionTreeRegressor(max_depth=4, min_samples_leaf=.26, random_state=SEED)
+
+#Evaluate the 10-fold CV error
+
+# Compute the array containing the 10-folds CV MSEs
+MSE_CV_scores = - cross_val_score(dt, X_train, y_train, cv=10, 
+                       scoring='neg_mean_squared_error',
+                       n_jobs=-1)
+
+# Compute the 10-folds CV RMSE
+RMSE_CV = (MSE_CV_scores.mean())**(1/2)
+
+# Print RMSE_CV
+print('CV RMSE: {:.2f}'.format(RMSE_CV))
+
+#Evaluando el error de entrenamiento
+
+# Fit dt to the training set
+dt.fit(X_train, y_train)
+
+# Predict the labels of the training set
+y_pred_train = dt.predict(X_train)
+
+# Evaluate the training set RMSE of dt
+RMSE_train = (MSE(y_train, y_pred_train))**(1/2)
+
+# Print RMSE_train
+print('Train RMSE: {:.2f}'.format(RMSE_train))
 
