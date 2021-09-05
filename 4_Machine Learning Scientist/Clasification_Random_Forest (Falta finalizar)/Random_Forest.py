@@ -157,10 +157,23 @@ from sklearn.model_selection import cross_val_score
 
 SEED = 1
 
+X = base.loc[:,['radius_mean','concave points_mean']] 
+y = range(569)
+
+#1 - Dividiendo el conjunto de datos entrenamiento y test. 80% - 20% 
 X_train, X_test, y_train, y_test = train_test_split(X, y,test_size=0.2,random_state=1)
 
-# Instantiate a DecisionTreeRegressor dt
+#Ingenieria de Variables - Convirtiendo la etiqueta categorica a binaria
+lb_make = LabelEncoder()
+base['diagnosis'] = lb_make.fit_transform(base['diagnosis'])
+
+#Seleccionando datos entrenamiento
+y_train = base.loc[y_train,'diagnosis']
+y_test = base.loc[y_test,'diagnosis']
+
+# 2 - Instantiate a DecisionTreeRegressor dt
 dt = DecisionTreeRegressor(max_depth=4, min_samples_leaf=.26, random_state=SEED)
+dt
 
 #Evaluate the 10-fold CV error
 
@@ -169,23 +182,28 @@ MSE_CV_scores = - cross_val_score(dt, X_train, y_train, cv=10,
                        scoring='neg_mean_squared_error',
                        n_jobs=-1)
 
-# Compute the 10-folds CV RMSE
-RMSE_CV = (MSE_CV_scores.mean())**(1/2)
+RMSE_CV = (MSE_CV_scores.mean())**(1/2) # Compute the 10-folds CV RMSE
 
-# Print RMSE_CV
-print('CV RMSE: {:.2f}'.format(RMSE_CV))
+print('CV RMSE: {:.2f}'.format(RMSE_CV)) # Print RMSE_CV
 
-#Evaluando el error de entrenamiento
-
-# Fit dt to the training set
+# 3 - Ajuste a los datos de entrenamiento
 dt.fit(X_train, y_train)
 
+# 4 - Prediccion del conjutno de prueba
 # Predict the labels of the training set
 y_pred_train = dt.predict(X_train)
 
-# Evaluate the training set RMSE of dt
+# 5 - Medicion de la presicion
+acc = accuracy_score(y_test, y_pred_tree)
+print("Test set accuracy: {:.2f}".format(acc))
+
+#Evaluate the trainign error
+# Evaluate the training set RMSE of dt 
 RMSE_train = (MSE(y_train, y_pred_train))**(1/2)
 
 # Print RMSE_train
 print('Train RMSE: {:.2f}'.format(RMSE_train))
+
+
+
 
