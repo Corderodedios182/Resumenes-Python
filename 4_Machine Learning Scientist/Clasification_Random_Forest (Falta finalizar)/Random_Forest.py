@@ -144,10 +144,14 @@ dt_entropy = DecisionTreeClassifier(max_depth=8, criterion='entropy', random_sta
 # Fit dt_entropy to the training set
 dt_entropy.fit(X_train, y_train)
 
+#Midiendo el Error Generalizado de un Modelo
+#Recordando que el Error Generalizado busca analizar la capacidad de aprender de nuevos datos
 #Decimos que el modelo de machine learning ha aprendido «de memoria» cuando:
 
-#el error de entrenamiento es bajo
+#el error de entrenamiento es bajo 
 #el error de generalización es alto
+
+#Aprendio bien de los datos de entrenamiento pero no Generaliza bien los datos de Test
 
 #Error Generalizado
 from sklearn.tree import DecisionTreeRegressor
@@ -167,7 +171,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y,test_size=0.2,random_st
 lb_make = LabelEncoder()
 base['diagnosis'] = lb_make.fit_transform(base['diagnosis'])
 
-#Seleccionando datos entrenamiento
+#Seleccionando datos entrenamiento y test
 y_train = base.loc[y_train,'diagnosis']
 y_test = base.loc[y_test,'diagnosis']
 
@@ -175,34 +179,30 @@ y_test = base.loc[y_test,'diagnosis']
 dt = DecisionTreeRegressor(max_depth=4, min_samples_leaf=.26, random_state=SEED)
 dt
 
-#Evaluate the 10-fold CV error
-
-# Compute the array containing the 10-folds CV MSEs
-MSE_CV_scores = - cross_val_score(dt, X_train, y_train, cv=10, 
-                       scoring='neg_mean_squared_error',
-                       n_jobs=-1)
-
-RMSE_CV = (MSE_CV_scores.mean())**(1/2) # Compute the 10-folds CV RMSE
-
-print('CV RMSE: {:.2f}'.format(RMSE_CV)) # Print RMSE_CV
-
-# 3 - Ajuste a los datos de entrenamiento
+# 3 - Ajuste a los datos de entrenamiento 
 dt.fit(X_train, y_train)
 
-# 4 - Prediccion del conjutno de prueba
-# Predict the labels of the training set
-y_pred_train = dt.predict(X_train)
+# 4.1 - Prediccion del conjunto de entrenamiento y test
+y_predict_train = dt.predict(X_train)
 
-# 5 - Medicion de la presicion
-acc = accuracy_score(y_test, y_pred_tree)
-print("Test set accuracy: {:.2f}".format(acc))
+# MSE del conjunto de entrenamiento
+print('Train MSE: {:.2f}'.format(MSE(y_train, y_predict_train)))
 
-#Evaluate the trainign error
-# Evaluate the training set RMSE of dt 
-RMSE_train = (MSE(y_train, y_pred_train))**(1/2)
+# 4.2 - Predicciones con el conjunto de Testeo
+y_predict_test = dt.predict(X_test)
 
-# Print RMSE_train
-print('Train RMSE: {:.2f}'.format(RMSE_train))
+# MSE del conjunto de testeo
+print('Test MSE: {:.2f}'.format(MSE(y_test, y_predict_test)))
+
+# 5 - Cros Validation
+# Evaluando el MSE con un CV de 10
+MSE_CV = - cross_val_score(dt, X_train, y_train, cv= 10,
+                           scoring='neg_mean_squared_error',
+                           n_jobs = -1)
+
+print('CV MSE: {:.2f}'.format(MSE_CV.mean()))
+
+#Viendo los 3 MSE podemos concluir que tienen un MSE similar por lo que el modelo parece Generalizar bien con los diferentes set de datos
 
 ##Metodo de Ensamble
 # Import functions to compute accuracy and split data
@@ -261,4 +261,5 @@ y_pred = vc.predict(X_test)
 # Calculate accuracy score
 accuracy = accuracy_score(y_test, y_pred)
 print('Voting Classifier: {:.3f}'.format(accuracy))
+
 
