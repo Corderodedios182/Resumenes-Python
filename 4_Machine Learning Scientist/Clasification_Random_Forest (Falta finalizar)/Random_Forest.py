@@ -319,11 +319,55 @@ acc_oob = bc.oob_score_
 # Print acc_test and acc_oob
 print('Test set accuracy: {:.3f}, OOB accuracy: {:.3f}'.format(acc_test, acc_oob))
 
+# - Random Forest
 
+X = base.drop(['id','diagnosis','Unnamed: 32'], axis = 1)
+y = range(569)
 
+#1 - Dividiendo el conjunto de datos entrenamiento y test. 80% - 20% 
+X_train, X_test, y_train, y_test = train_test_split(X, y,test_size=0.2,random_state=1)
 
+#Ingenieria de Variables - Convirtiendo la etiqueta categorica a binaria
+lb_make = LabelEncoder()
+base['diagnosis'] = lb_make.fit_transform(base['diagnosis'])
 
+#Seleccionando datos entrenamiento
+y_train = base.loc[y_train,'diagnosis']
+y_test = base.loc[y_test,'diagnosis']
 
+# Import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor
+
+# Instantiate rf
+rf = RandomForestRegressor(n_estimators=25,
+            random_state=2)
+            
+# Fit rf to the training set    
+rf.fit(X_train, y_train) 
+
+# Import mean_squared_error as MSE
+from sklearn.metrics import mean_squared_error as MSE
+
+# Predict the test set labels
+y_pred = rf.predict(X_test)
+
+# Evaluate the test set RMSE
+rmse_test = MSE(y_test, y_pred)**(1/2)
+
+# Print rmse_test
+print('Test set RMSE of rf: {:.2f}'.format(rmse_test))
+
+# Create a pd.Series of features importances
+importances = pd.Series(data=rf.feature_importances_,
+                        index= X_train.columns)
+
+# Sort importances
+importances_sorted = importances.sort_values()
+
+# Draw a horizontal barplot of importances_sorted
+importances_sorted.plot(kind='barh', color='lightgreen')
+plt.title('Features Importances')
+plt.show()
 
 
 
