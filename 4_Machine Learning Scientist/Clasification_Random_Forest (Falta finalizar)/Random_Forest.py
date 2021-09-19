@@ -262,4 +262,42 @@ y_pred = vc.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
 print('Voting Classifier: {:.3f}'.format(accuracy))
 
+#Bagging and Random Forests
+#Bagging es un método de conjunto que implica entrenar el mismo algoritmo muchas veces usando diferentes subconjuntos muestreados de los datos de entrenamiento.
+#Cómo se puede utilizar el Bagging para crear un conjunto de árbol.
+#También aprenderá cómo el algoritmo de bosques aleatorios puede conducir a una mayor diversidad de conjuntos a través de la aleatorización
+#al nivel de cada división en los árboles que forman el conjunto.
+
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import BaggingClassifier
+
+#Define the bagging classifier
+dt = DecisionTreeClassifier(random_state=1)
+bc = BaggingClassifier(base_estimator=dt, n_estimators=50, random_state=1)
+
+#Evaluate Bagging performance
+
+# Fit bc to the training set
+bc.fit(X_train, y_train)
+
+# Predict test set labels
+y_pred = bc.predict(X_test)
+
+# Evaluate acc_test
+acc_test = accuracy_score(y_test, y_pred)
+print('Test set accuracy of bc: {:.2f}'.format(acc_test)) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
