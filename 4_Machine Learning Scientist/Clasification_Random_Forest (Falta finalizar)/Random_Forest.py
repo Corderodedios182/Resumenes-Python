@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from mlxtend.plotting import plot_decision_regions
 import matplotlib.gridspec as gridspec
 import itertools
-from dtreeviz.trees import *
+#from dtreeviz.trees import *
 
 #Import dataset
 base = pd.read_csv("https://assets.datacamp.com/production/repositories/1796/datasets/0eb6987cb9633e4d6aa6cfd11e00993d2387caa4/wbc.csv")
@@ -78,14 +78,14 @@ acc = accuracy_score(y_test, y_pred_tree)
 print("Test set accuracy: {:.2f}".format(acc))
 
 # 6 - Arbol de desicion 
-viz = dtreeviz(dt,
-               X_train,
-               y_train,
-               target_name = 'diagnosis',
-               feature_names = ['concave points_mean','radius_mean'],
-               class_names = ['B','M'])
+#viz = dtreeviz(dt,
+#               X_train,
+#               y_train,
+#               target_name = 'diagnosis',
+#               feature_names = ['concave points_mean','radius_mean'],
+#               class_names = ['B','M'])
               
-viz.view()       
+#viz.view()       
 
     #LogisticRegression
 
@@ -368,6 +368,89 @@ importances_sorted = importances.sort_values()
 importances_sorted.plot(kind='barh', color='lightgreen')
 plt.title('Features Importances')
 plt.show()
+
+###Boosting##
+
+#Boosting se refiere a un método de conjunto en el que varios modelos se entrenan secuencialmente y cada modelo aprende de los errores de sus predecesores.
+#Se presentarán los dos métodos de refuerzo de AdaBoost y Gradient Boosting.
+
+# Import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier
+
+# Import AdaBoostClassifier
+from sklearn.ensemble import AdaBoostClassifier
+
+# Instantiate dt
+dt = DecisionTreeClassifier(max_depth=2, random_state=1)
+
+# Instantiate ada
+ada = AdaBoostClassifier(base_estimator=dt, n_estimators=180, random_state=1)
+
+# Fit ada to the training set
+ada.fit(X_train, y_train)
+
+# Compute the probabilities of obtaining the positive class
+y_pred_proba = ada.predict_proba(X_test)[:,1]
+
+# Import roc_auc_score
+from sklearn.metrics import roc_auc_score
+
+# Evaluate test-set roc_auc_score
+ada_roc_auc = roc_auc_score(y_test, y_pred_proba)
+
+# Print roc_auc_score
+print('ROC AUC score: {:.2f}'.format(ada_roc_auc))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
