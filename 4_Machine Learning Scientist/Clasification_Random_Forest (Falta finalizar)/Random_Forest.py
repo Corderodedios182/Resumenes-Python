@@ -460,8 +460,18 @@ rmse_test = mse_test**(1/2)
 # Print rmse_test
 print('Test set RMSE of sgbr: {:.3f}'.format(rmse_test))
 
+#####Inpecting the hyperparameters of a CART in sklearn
 
+# Import DecisionTreeClassifier 
+from sklearn.tree import DecisionTreeClassifier
 
+# Set seed to 1 for reproducibility 
+SEED = 1
+
+# Instantiate a DecisionTreeClassifier 'dt'
+dt = DecisionTreeClassifier(random_state=SEED)
+
+dt.get_params()
 
 
 
