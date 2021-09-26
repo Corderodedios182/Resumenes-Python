@@ -5,52 +5,52 @@ Created on Sat Sep 25 10:29:03 2021
 @author: Maste
 """
 
-#En este capítulo, aprenderá los conceptos básicos de la aplicación de regresión logística y máquinas de vectores de soporte (SVM) a problemas de clasificación.
+# Trabajando con diferentes clasificadores lineales, veremos las regiones de desicion que pueden generar.
 
-#Utilizará la biblioteca scikit-learn para ajustar los modelos de clasificación a datos reales.
+#Definiciones utiles: 
 
-import sklearn.datasets
+# Clasificación: aprender a predecir categorías
 
-newsgroup = sklearn.datasets.fetch_20newsgroups_vectorized()
-X, y = newsgroup.data, newsgroup.target 
-X.shape
-y.shape
+# Límite de decisión: la superficie que separa diferentes clases predichas
 
-import pandas as pd
-X_dataframe = pd.DataFrame(X.todense())
+# Clasificador lineal: un clasificador que aprende límites de decisión lineal
+#   regresión logística, SVM lineal
 
-#Prediccion 
+# Separable linealmente: un conjunto de datos se puede explicar perfectamente mediante un clasificador lineal
+
+#import os
+#os.listdir()
+#os.chdir("'C:\\Users\\Maste\\Documents\\1_Github\\Resumenes-Python\\4_Machine Learning Scientist'")
+
+import plot_classifier as plt_cls
+import numpy as np
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC, LinearSVC
 from sklearn.neighbors import KNeighborsClassifier
 
-#Instanciando 2 modelos diferentes
-knn_1 = KNeighborsClassifier(n_neighbors=1)
-knn_2 = KNeighborsClassifier(n_neighbors=2)
+X = [[11.45,  2.4 ],[13.62,  4.95],[13.88,  1.89],[12.42,  2.55],[12.81,  2.31],[12.58,  1.29],[13.83,  1.57],[13.07,  1.5 ],[12.7 ,  3.55],[13.77,  1.9 ],
+       [12.84,  2.96],[12.37,  1.63],[13.51,  1.8 ],[13.87,  1.9 ],[12.08,  1.39],[13.58,  1.66],[13.08,  3.9 ],[11.79,  2.13],[12.45,  3.03],[13.68,  1.83],
+       [13.52,  3.17],[13.5 ,  3.12],[12.87,  4.61],[14.02,  1.68],[12.29,  3.17],[12.08,  1.13],[12.7 ,  3.87],[11.03,  1.51],[13.32,  3.24],[14.13,  4.1 ],
+       [13.49,  1.66],[11.84,  2.89],[13.05,  2.05],[12.72,  1.81],[12.82,  3.37],[13.4 ,  4.6 ],[14.22,  3.99],[13.72,  1.43],[12.93,  2.81],[11.64,  2.06],
+       [12.29,  1.61],[11.65,  1.67],[13.28,  1.64],[12.93,  3.8 ],[13.86,  1.35],[11.82,  1.72],[12.37,  1.17],[12.42,  1.61],[13.9 ,  1.68],[14.16,  2.51]]
 
-#Entrenando el modelo con todos los datos
-knn_1.fit(X,y)
+X = np.array(X)
 
-y_pred = knn_1.predict(X)
+y = [True,  True, False,  True,  True,  True, False, False,  True, False,  True,  True, False, False,  True, False,  True,  True,
+     True, False,  True,  True,  True, False,  True,  True,  True, True,  True,  True,  True,  True, False,  True,  True,  True,
+     False, False,  True,  True,  True,  True, False, False, False, True,  True,  True, False,  True]
 
-#Evaluacion del modelo, erronea ya que debemos ver la presicion con datos invisibles.
-knn_1.score(X,y)
+y = np.array(y)
 
-#Separando datos de entrenamiento y test
-from sklearn.model_selection import train_test_split
+# Definiendo clasificadores
+classifiers = [LogisticRegression(), LinearSVC(), SVC(), KNeighborsClassifier()]
 
-X_train, X_test, y_train, y_test = train_test_split(X,y)
+# Entrenamiento de clasificadores
+for c in classifiers:
+    c.fit(X, y)
 
-#Entrenando 2 modelos
-knn_1.fit(X_train,y_train)
-knn_2.fit(X_train,y_train)
+# Grafica clasificadores
+# Visualización de límites de desición
 
-# Predict on the test features, print the results
-pred_1 = knn_1.predict(X_test)
-pred_2 = knn_2.predict(X_test)
-
-knn_1.score(X_test, y_test)
-knn_2.score(X_test, y_test)
-
-from sklearn.metrics import accuracy_score 
-# Este accuracy es lo mismo que knn.score
-accuracy_score(pred_1, y_test)
-accuracy_score(pred_2, y_test)
+plt_cls.plot_4_classifiers(X, y, classifiers)
