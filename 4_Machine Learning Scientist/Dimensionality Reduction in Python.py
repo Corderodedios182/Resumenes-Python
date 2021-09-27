@@ -11,7 +11,7 @@ de alta dimensión
 """
 import pandas as pd
 import seaborn as sns
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import numpy as np
 
 salary_df = pd.read_csv("C:/Users/Maste/Documents/1_Github/Resumenes-Python/4_Machine Learning Scientist/datos/salary_programmers.csv")
@@ -25,6 +25,8 @@ salary_df = salary_df.fillna(0)
 salary_df.info()
 salary_df.describe(exclude=('number'))
 salary_df.describe()
+
+salary_df["salary"] = salary_df["salary"].astype('int')
 
 #Division de columnas numericas y no numericas
 drop_cols = ["id","timestamp"]
@@ -42,7 +44,7 @@ mylabels = salary_df["country"].value_counts(normalize = True).index
 plt.pie(y, labels = mylabels)
 
 #Graficando las variables relevantes
-sns.pairplot(salary_df, hue='country', diag_kind='hist')
+sns.pairplot(salary_df[number_cols + ["country"]], hue='country', diag_kind='hist')
 
 #Libreria para un resumen rapido de los datos en Jupyter.
 import pandas_profiling as pp
@@ -116,25 +118,27 @@ from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 
 lb_make = LabelEncoder()
-pokemon_df['Type 1'] = lb_make.fit_transform(pokemon_df['Type 1'])
-pokemon_df['Type 2'] = lb_make.fit_transform(pokemon_df['Type 2'])
 
-X = pokemon_df.drop(["Name","#","Total","Generation"], axis = 1)
-y = pokemon_df["Generation"]
+salary_df['country'] = lb_make.fit_transform(salary_df['country'])
+salary_df['employment_status'] = lb_make.fit_transform(salary_df['employment_status'])
+salary_df['job_title'] = lb_make.fit_transform(salary_df['job_title'])
+salary_df['is_manager'] = lb_make.fit_transform(salary_df['is_manager'])
+salary_df['education'] = lb_make.fit_transform(salary_df['education'])
+salary_df['certifications'] = lb_make.fit_transform(salary_df['certifications'])
+
+salary_df['certifications'] = salary_df['certifications'].astype(int)
+salary_df['hours_per_week'] = salary_df['hours_per_week'].astype(int)
+salary_df['telecommute_days_per_week'] = salary_df['telecommute_days_per_week'].astype(int)
+salary_df['job_years'] = salary_df['job_years'].astype(int)
+
+X = salary_df.drop(["employment_status","is_manager","is_education_computer_related","x","y","salary","certifications"], axis = 1)
+y = salary_df["salary"]
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size= .30)
 
 svc = SVC()
 svc.fit(X_train, y_train)
+a = svc.predict(X_test)
 
 print(accuracy_score(y_test, svc.predict(X_test))) #Erro
 print(accuracy_score(y_train, svc.predict(X_train))) #Error de entrenamiento
-
-
-
-
-
-
-
-
-
-
