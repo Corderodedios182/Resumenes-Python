@@ -20,7 +20,7 @@ Created on Sat Sep 25 10:29:03 2021
 
 import os
 os.listdir()
-os.chdir("C:\\Users\\Maste\\Documents\\1_Github\\Resumenes-Python\\4_Machine Learning Scientist")
+os.chdir("C:\\Users\\Maste\\Documents\\1_Github\\Resumenes-Python\\4_Machine Learning Scientist") #C:\\Users\\crf005r\\Documents\\3_GitHub\\Resumenes-Python\\4_Machine Learning Scientist
 
 import plot_classifier as plt_cls
 import numpy as np
@@ -91,3 +91,39 @@ lr.intercept_ = np.array([24])
 plt_cls.plot_classifier(X,y,lr)
 num_err = np.sum(y != lr.predict(X))
 print("Numero de errores:", num_err)
+
+#---------------------------------------------------------------------------#
+#Muchos algoritmos de aprendizaje automático implican minimizar una pérdida.
+
+#Nota; No confundir la función de puntuación model.score() con las funciones de perdida.
+#La pérdida se usa para ajustar el modelo en los datos, y model.score() se usa para ver qué tan bien los estamos haciendo.
+
+#Ejemplos de funciones perdida para algunos algoritmos:
+    
+#En Regresión Líneal (LinearRegression) tenemos : Mínimos Cuadrados  
+
+#Clustering : El número de errores podría ser una buena función de perdida. (0-1)
+
+#Regresión logística :
+    
+#SVM : 
+
+#Estas funciones de perdida son el objetivo a minimizar para tener un mejor rendimiento en los modelos
+
+#El error cuadrado no es apropiado para problemas de clasificación ya que los valores de salida son categoricos, lo normal es pensar en la cantidad
+#de errores que se han cometido
+
+#Minimizando funciones con python
+
+from scipy.optimize import minimize
+
+minimize(np.square,0).x #Valor minimo de la función x = 0
+
+#Veamos como minimizar el error al cuadrado de la regresión lineal.
+
+
+
+
+    
+    
+
