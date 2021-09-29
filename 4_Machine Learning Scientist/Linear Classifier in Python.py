@@ -22,10 +22,11 @@ import os
 os.listdir()
 os.chdir("C:\\Users\\Maste\\Documents\\1_Github\\Resumenes-Python\\4_Machine Learning Scientist") #C:\\Users\\crf005r\\Documents\\3_GitHub\\Resumenes-Python\\4_Machine Learning Scientist
 
+import matplotlib.pyplot as plt 
 import plot_classifier as plt_cls
 import numpy as np
 
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.svm import SVC, LinearSVC
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -120,10 +121,54 @@ from scipy.optimize import minimize
 minimize(np.square,0).x #Valor minimo de la función x = 0
 
 #Veamos como minimizar el error al cuadrado de la regresión lineal.
+def my_loss(w):
+    s = 0
+    for i in range(y.size):
+        # Obtenga los valores objetivo verdaderos y predichos, por ejemplo, 'i'
+        y_i_true = y[i]
+        y_i_pred = w @ X[i] # @ Es el producto escalar
+        s = s + (y_i_true - y_i_pred)**2 #Error cuadratico
+    return s
 
+#Minimizando la funcion de perdidad error cuadratico
+w_fit = minimize(my_loss, X[0]).x
+#Coeficientes de la minimizacion función de perdida
+print(w_fit)
 
+# Coeficientes sin la minimizacion
+lr = LinearRegression(fit_intercept=False).fit(X,y)
+print(lr.coef_)
+print(lr.intercept_)
 
+#Diagramas de funciones de perdida
+# Funciones matemáticas para pérdidas logísticas y de bisagra
+def log_loss(raw_model_output):
+   return np.log(1+np.exp(-raw_model_output))
 
-    
-    
+def hinge_loss(raw_model_output):
+   return np.maximum(0,1-raw_model_output)
 
+# Crea una cuadrícula de valores y traza
+grid = np.linspace(-2,2,1000)
+plt.plot(grid, log_loss(grid), label='logistic')
+plt.plot(grid, hinge_loss(grid), label='hinge')
+plt.legend()
+plt.show()
+
+# La pérdida logística, resumida en ejemplos de formación
+def my_loss(w):
+    s = 0
+    for i in range(y.size):
+        raw_model_output = w@X[i]
+        s = s + log_loss(raw_model_output * y[i])
+    return s
+
+# Devuelve la w que hace que my_loss (w) sea la más pequeña
+w_fit = minimize(my_loss, X[0]).x
+print(w_fit)
+
+# Comparar con LogisticRegression de scikit-learn
+lr = LogisticRegression(fit_intercept=False, C=1000000).fit(X,y)
+print(lr.coef_)
+
+#La regresión logística solo minimiza la función de pérdida que hemos estado analizando.
