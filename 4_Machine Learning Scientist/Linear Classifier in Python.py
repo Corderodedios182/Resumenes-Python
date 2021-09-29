@@ -18,9 +18,9 @@ Created on Sat Sep 25 10:29:03 2021
 
 # Separable linealmente: un conjunto de datos se puede explicar perfectamente mediante un clasificador lineal
 
-#import os
-#os.listdir()
-#os.chdir("'C:\\Users\\Maste\\Documents\\1_Github\\Resumenes-Python\\4_Machine Learning Scientist'")
+import os
+os.listdir()
+os.chdir("C:\\Users\\Maste\\Documents\\1_Github\\Resumenes-Python\\4_Machine Learning Scientist")
 
 import plot_classifier as plt_cls
 import numpy as np
@@ -54,3 +54,40 @@ for c in classifiers:
 # Visualización de límites de desición
 
 plt_cls.plot_4_classifiers(X, y, classifiers)
+
+####################
+#Funcion de Perdida#
+####################
+
+#Veamos el marco conceptual detrás de la regresión logística y las SVM.
+#Esto permitirá profundizar en el funcionamiento interno de estos modelos.
+
+#Los coeficientes y parametros juegan un papel importante al crear la región de desición
+#¿Como genera la clasificacion Logistic Regression?
+#Revisamos si es positiva (predicen la clase) o negativa
+#salida_modelo = coefficients * geatures + intercept
+
+#Veamos los parametros que genera el siguiente modelo
+lr = LogisticRegression()
+lr.fit(X,y)
+
+lr.predict(X)[10] #Salida final de el metodo predict
+lr.predict(X)[2]
+
+#¿Como genera la clasificación internamente, por medio de los coeficientes e interceptos
+#Si es positivo lo clasifica como 1
+lr.coef_ @ X[10] + lr.intercept_ #El @ es producto escalar
+#Si es negativo lo clasifica como 0
+lr.coef_ @ X[2] + lr.intercept_ #El @ es producto escalar
+
+plt_cls.plot_classifier(X,y,lr)
+num_err = np.sum(y != lr.predict(X))
+print("Numero de errores:", num_err)
+
+#Ajustando los coeficientes veamos si incrementa la presición o disminuye
+lr.coef_ = np.array([[-2,1]])
+lr.intercept_ = np.array([24])
+
+plt_cls.plot_classifier(X,y,lr)
+num_err = np.sum(y != lr.predict(X))
+print("Numero de errores:", num_err)
