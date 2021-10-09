@@ -1,0 +1,238 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Oct  9 16:09:35 2021
+
+@author: Maste
+"""
+
+#¿Que es machine learning?
+
+#Es la ciencia y el arte de darles a las computadoras capacidad de aprender a tomar decisiones a partir de datos sin ser programado explícitamente.
+
+#Ejemplos:
+
+#Tenemos etiquetas -> Aprendizaje Supervisado
+
+    #Nuestra computadora puede aprender a predecir si un correo electrónico es spam o no dado su contenido y remitente.
+
+#No tenemos etiquetas -> Aprendizaje No Supervisado -> La escencia de este metodo es descubrir patrones y estructuras ocultas a partir de datos sin etiquetar.
+
+    #Clasificación de entradas de Wikipedia en función de las palabras que contienen. Luego cada artículo nuevo puede ser asignado a uno de los grupos existentes.
+    
+    #Clasificación de clientes 
+    
+#Aprendizaje Por Refuerzo -> Maquinas o Agentes interactúan con un entorno, los agentes de refuerzo pueden descubrir automáticamente cómo optimizar su comportamiento dado un sistema de recompensas y castigos.
+
+    #Aplicaciones en Economía, Genética, Videojuegos.
+    
+    #2016 se ocupo para entrenar a Google DeepMind
+
+    #AlphaGo
+
+#########################
+#Aprendizaje Supervisado#
+#########################
+
+#Tenemos varios puntos de datos o muestras descrito usando variables o características predictoras y una variable objetivo.
+
+#Ejemplo la tabla iris: Variables predictoras (Sepal, Petal) y Variable Objetivo (Species)
+
+#El objetivo del aprendizaje supervisado es construir un modelo que pueda predecir la variable objetivo.
+
+    #Clasificación: Variable objetivo consiste en definir una categoría.
+    
+        #Predecir la Especie de una flor apartir de sus medidas de Sepal Y Petal.
+    
+    #Regresion: Variable objetivo es continua.
+
+        #Precio de una casa.
+        
+ #Nota: Features = predictor variables = independent variables 
+ 
+       #Target variable = dependent variable = response variable
+
+#El objetivo del aprendizaje supervisado es con frecuencia automatizar una tarea manual costosa o que lleva mucho tiempo, como:
+
+    #Un diagnóstico médico
+    
+    #Predicciones sobre el futuro
+    
+    #Si un cliente hará un clic en un anuncio
+    
+    
+#Para el aprendizaje supervisado, necesitamos datos etiquetados y hay muchas formas de obtenerlos.
+
+    #Datos historico ya etiquetados
+    
+    #Experimentos para obtener datos etiquetados, como pruebas A/B 
+    
+    #Datos etiquetados de colaboración colectiva
+    
+#En cualquier caso, el objetivo es aprender de los datos para los que se obtiene la salida correcta y podamos hacer predicciones sobre nuevos datos para los que no conocemos el resultado.
+
+#Existen muchas maneras de hacer Aprendizaje Supervisado con Python.
+
+#Utilizaremos scikit-learn, una de las bibliotecas más populaes y fáciles de usar para Python.
+
+    #Se integra muy bien con SciPy Y Numpy
+    
+    #Existen otras bibliotecas como Tensorflow y Keras pero lo recomendable es familiarizarze con Scikit-Learn primero.
+    
+
+#Classification
+
+#Regression
+
+#Fine-tuning your model
+
+#Preprocessing and pipelines
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib.pyplot as plt 
+from matplotlib import pyplot as plt
+
+plt.style.use('ggplot')
+
+#Podemos cuidar el tamaño de nuestras gráficas en los cuadernos jupyter
+plt.rcParams['figure.figsize'] = [25, 8]
+
+######################
+#Conociendo los datos#
+######################
+
+#Trabajaremos con un conjunto de datos obtenido del Repositorio de Aprendizaje Automático de la UCI que consta de los votos hechos por los Congresistas de la Cámara de Representantes de EE. UU.
+
+#El objetivo será predecir la afiliación partidaria ('demócrata' o 'republicano') en función de cómo votaron sobre ciertos temas clave.
+
+#Aquí, vale la pena señalar que hemos preprocesado este conjunto de datos para tratar con los valores faltantes.
+
+df = pd.read_csv('https://assets.datacamp.com/production/repositories/628/datasets/35a8c54b79d559145bbeb5582de7a6169c703136/house-votes-84.csv')
+
+df.columns = ['party', 'infants', 'water', 'budget', 'physician', 'salvador','religious', 'satellite', 'aid', 
+              'missile', 'immigration', 'synfuels','education', 'superfund', 'crime', 'duty_free_exports', 'eaa_rsa']
+
+df.head()
+
+base = df
+
+#Limpiando los datos convertiremos los signos "?" en 0 
+base.head()
+
+#Tenemos 17 proyectos de ley y 434 democratas y republicanos, más adelante realizaremos un análisis exploratorio antes de proponer un modelo de clasificación
+
+#Proyectos de ley
+columna = base.iloc[:,1:].keys()
+columna
+
+#En ocasiones no todos los congresistas votan, colocando un signo "?", veremos más adelante como trabajar con este tipo de datos faltantes.
+
+def conteo_tmp(base,columna = 'infants'):
+    
+    return base.loc[:,columna].value_counts()
+
+pd.DataFrame( [conteo_tmp(base, columna[i]) for i in range(0,len(columna))] )
+
+#Convertiremos los no = 0 y yes = 1, para tener variables dicotomicas.
+
+# Conteo de democrat y republican
+
+df.party.value_counts()
+
+def remplazo(base,columna = 'infants'):
+    base.loc[base.loc[:,columna] == 'y',columna] = 1
+    base.loc[base.loc[:,columna] == 'n',columna] = 0
+    base.loc[base.loc[:,columna] == '?',columna] = 0 #lo remplazaremos más adelante
+    
+    return base
+
+for i in range(len(columna)):
+    remplazo(base, columna[i])
+
+base.head()
+
+#Nuevo conteo con los no = 0 y yes = 1
+pd.DataFrame( [conteo_tmp(base, columna[i]) for i in range(0,len(columna))] )
+
+
+#Algunas Graficas proyecto de ley
+
+plt.figure()
+sns.countplot(x='education', hue='party', data=base, palette='RdBu')
+plt.title("Votos para la educación, los democratas apoyaron más los proyectos de ley para educación")
+plt.xticks([0,1], ['No', 'Yes'])
+plt.show()
+
+
+# Convertimos todo en una nueva base donde en una columna tenemos el partido, en otra todos los proyectos y las votaciones
+base_melt = pd.melt(base.iloc[:,:5], id_vars = "party")
+
+base_melt.variable.value_counts()
+
+base_melt.head(15)
+
+base_melt.party = base_melt.party.astype("category")
+base_melt.variable = base_melt.variable.astype("category")
+base_melt.info()
+
+#Conteo de votos para algunas leyes
+tmp = pd.DataFrame(base_melt.groupby(['party','variable','value']).size()).reset_index()
+tmp.columns = ['party','variable','value','votos']
+tmp
+
+#Modelo k-Nearest Neighbors: Fit (Clasificación)
+
+#Habiendo explorado el conjunto de datos de los registros de votación del Congreso, es hora de construir su primer clasificador.
+
+#En este ejercicio, ajustará un clasificador k-Nearest Neighbours al conjunto de datos de votación, que una vez más se ha cargado previamente en un DataFrame base.
+
+# Importando KNeighborsClassifier de sklearn.neighbors
+from sklearn.neighbors import KNeighborsClassifier 
+
+# Creamos los datos separando la variable de respuesta
+y = base['party'].values
+X = base.drop('party', axis=1).values
+
+# Instanciando un k-NN con n_neighbors = 6
+knn = KNeighborsClassifier(n_neighbors=6)
+
+# Entrenando los datos
+knn.fit(X, y)
+
+#Toma un vector del mismo tamaño que el numero de proyectos o culumnas
+knn.predict(X)[0:10]
+
+new_prediction = knn.predict([[0.696469, 0.286139,  0.226851 , 0.551315 , 0.719469 , 0.423106 , 0.980764, 0.68483,  0.480932,  0.392118,  0.343178,  0.72905,  0.438572,  0.059678, 0.398044,  0.737995]])
+print("Prediction: {}".format(new_prediction)) 
+
+y_pred = knn.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
