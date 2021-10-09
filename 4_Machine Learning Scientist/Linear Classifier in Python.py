@@ -94,7 +94,7 @@ num_err = np.sum(y != lr.predict(X))
 print("Numero de errores:", num_err)
 
 #---------------------------------------------------------------------------#
-#Muchos algoritmos de aprendizaje automático implican minimizar una pérdida.
+#Muchos algoritmos de aprendizaje automático implican minimizar una funcion de pérdida.
 
 #Nota; No confundir la función de puntuación model.score() con las funciones de perdida.
 #La pérdida se usa para ajustar el modelo en los datos, y model.score() se usa para ver qué tan bien los estamos haciendo.
@@ -172,3 +172,41 @@ lr = LogisticRegression(fit_intercept=False, C=1000000).fit(X,y)
 print(lr.coef_)
 
 #La regresión logística solo minimiza la función de pérdida que hemos estado analizando.
+
+#---------------------------------------------------------------------------#
+#Regresion Logistica#
+
+#¿Qué es la regularización en machine learning?
+#En muchas técnicas de aprendizaje automático, el aprendizaje consiste en encontrar los coeficientes que minimizan una función de coste.
+#La regularización consiste en añadir una penalización a la función de coste. 
+#Esta penalización produce modelos más simples que generalizan mejor.
+
+#La técnica de regularización puede ser empleada para corregir el sobreajuste.
+#Esta técnica puede emplearse en un conjunto amplio de técnicas de minería de datos como regresión linear, regresión logística, SVM, etc.
+#La regularización consiste en reducir la importancia de los parámetros θj que aparecen en la función de coste.
+#Este efecto se consigue mediante la inclusión de los parámetros θj en la función de coste J(θ).
+
+#Finalmente podremos variar los parámetros de regularización para entender como la regularización soluciona el problema de Overfitting.
+#Note los cambios en los limites de decisión al variar lamda. 
+
+#Para un valor de lamda muy pequeño, el clasificador predice casi exactamente los datos de entrenamiento,
+#creándose una frontera de decisión compleja, presentándose así Overtiffitng, y la predicción para un nuevo dato no resulta ser correcta,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
