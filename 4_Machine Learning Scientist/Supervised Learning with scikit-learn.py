@@ -87,12 +87,18 @@ Created on Sat Oct  9 16:09:35 2021
 
 #Preprocessing and pipelines
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
+import os
+os.listdir()
+os.chdir("C:\\Users\\Maste\\Documents\\1_Github\\Resumenes-Python\\4_Machine Learning Scientist")
+
 import matplotlib.pyplot as plt 
-from matplotlib import pyplot as plt
+import plot_classifier as plt_cls
+import pandas as pd
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.neighbors import KNeighborsClassifier 
 
 plt.style.use('ggplot')
 
@@ -188,12 +194,12 @@ tmp
 
 #En este ejercicio, ajustará un clasificador k-Nearest Neighbours al conjunto de datos de votación, que una vez más se ha cargado previamente en un DataFrame base.
 
-# Importando KNeighborsClassifier de sklearn.neighbors
-from sklearn.neighbors import KNeighborsClassifier 
-
 # Creamos los datos separando la variable de respuesta
 y = base['party'].values
 X = base.drop('party', axis=1).values
+
+lb_make = LabelEncoder()
+y = lb_make.fit_transform(y)
 
 # Instanciando un k-NN con n_neighbors = 6
 knn = KNeighborsClassifier(n_neighbors=6)
@@ -207,7 +213,65 @@ knn.predict(X)[0:10]
 new_prediction = knn.predict([[0.696469, 0.286139,  0.226851 , 0.551315 , 0.719469 , 0.423106 , 0.980764, 0.68483,  0.480932,  0.392118,  0.343178,  0.72905,  0.438572,  0.059678, 0.398044,  0.737995]])
 print("Prediction: {}".format(new_prediction)) 
 
-y_pred = knn.
+#¿Como medimos el rendimiento de nuestro clasificador?
+
+#En los problemas de clasificación, la presición es un métrica de uso común
+
+#Lo que realmennte interesa es como el modelo va a responder a nuevos datos que nunca ha visto antes.
+
+#Por esta razón, dividiremos el conjunto de datos en entrenamiento y pruebas.
+
+#Entrenamos el modelo con los datos de entrenamiento y con el conjunto de pruebas hacemos nuevas predicciones y comparamos.
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 21, stratify = y)
+
+knn = KNeighborsClassifier(n_neighbors=8)
+knn.fit(X_train, y_train)
+y_pred = knn.predict(X_test)
+
+#Para comprobar la presición de nuestro modelo, utilizamos el método de puntuación del modelo.
+knn.score(X_test, y_test)
+
+#Regiones de desición variando los parametros
+plt.rcParams['figure.figsize'] = [20, 20]
+plt.title("Knn región de desición líneal")
+plt_cls.plot_decision_boundaries(X, y,  KNeighborsClassifier,n_neighbors=2)
+plt_cls.plot_decision_boundaries(X, y,  KNeighborsClassifier,n_neighbors=8)
+plt_cls.plot_decision_boundaries(X, y,  KNeighborsClassifier,n_neighbors=15)
+
+#Grafica variando el numero de n_neighbors y su presición.
+n_neighbors = range(1,20)
+train  = []
+test = []
+
+for i in n_neighbors:
+    knn = KNeighborsClassifier(n_neighbors=i)
+    knn.fit(X_train, y_train)
+    
+    train.append(knn.score(X_train, y_train))
+    test.append(knn.score(X_test, y_test))
+
+plt.rcParams['figure.figsize'] = [5, 5]
+line_up, = plt.plot(n_neighbors, train , label='Training Accuracy')
+line_down, = plt.plot(n_neighbors, test, label='Testing Accuracy')
+plt.title("KNN : Variación de numero de cluster")
+plt.legend([line_up, line_down], ['Training Accuracy', 'Testing Accuracy'])
+plt.annotate('Overfiting', xy = (1.5, .94), arrowprops = {'facecolor':'gray', 'width': 3, 'shrink': 0.03})
+plt.annotate('Optimo', xy = (8, .94), arrowprops = {'facecolor':'gray', 'width': 3, 'shrink': 0.03})
+plt.annotate('Underfiting', xy = (16, .94), arrowprops = {'facecolor':'gray', 'width': 3, 'shrink': 0.03})
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
