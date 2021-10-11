@@ -89,7 +89,8 @@ Created on Sat Oct  9 16:09:35 2021
 
 import os
 os.listdir()
-os.chdir("C:\\Users\\Maste\\Documents\\1_Github\\Resumenes-Python\\4_Machine Learning Scientist")
+os.chdir("C:\\Users\\crf005r\\Documents\\3_GitHub\\Resumenes-Python\\4_Machine Learning Scientist")
+         #"C:\\Users\\Maste\\Documents\\1_Github\\Resumenes-Python\\4_Machine Learning Scientist"
 
 import matplotlib.pyplot as plt 
 import plot_classifier as plt_cls
@@ -188,7 +189,9 @@ tmp = pd.DataFrame(base_melt.groupby(['party','variable','value']).size()).reset
 tmp.columns = ['party','variable','value','votos']
 tmp
 
-#Modelo k-Nearest Neighbors: Fit (Clasificación)
+#################################################
+#Modelo k-Nearest Neighbors: Fit (Clasificación)#
+#################################################
 
 #Habiendo explorado el conjunto de datos de los registros de votación del Congreso, es hora de construir su primer clasificador.
 
@@ -261,10 +264,36 @@ plt.annotate('Optimo', xy = (8, .94), arrowprops = {'facecolor':'gray', 'width':
 plt.annotate('Underfiting', xy = (16, .94), arrowprops = {'facecolor':'gray', 'width': 3, 'shrink': 0.03})
 
 
+############
+#Regression#
+############
+
+gapminder = pd.read_csv("https://assets.datacamp.com/production/repositories/628/datasets/a7e65287ebb197b1267b5042955f27502ec65f31/gm_2008_region.csv")
+
+gapminder = gapminder.drop("Region", axis = 1)
+
+gapminder.head()
 
 
+# Create arrays for features and target variable
+y = gapminder['life'].values
+X_fertility = gapminder['fertility'].values
 
+# Print the dimensions of X and y before reshaping
+print("Dimensions of y before reshaping: {}".format(y.shape))
+print("Dimensions of X before reshaping: {}".format(X.shape))
 
+# Reshape X and y
+y = y.reshape(-1, 1)
+X_fertility = X_fertility.reshape(-1, 1)
+
+# Print the dimensions of X and y after reshaping
+print("Dimensions of y after reshaping: {}".format(y.shape))
+print("Dimensions of X after reshaping: {}".format(X.shape))
+
+import seaborn as sns
+
+sns.heatmap(gapminder.corr(), square=True, cmap='RdYlGn')
 
 
 
