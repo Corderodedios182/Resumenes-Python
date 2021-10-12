@@ -296,6 +296,31 @@ import seaborn as sns
 sns.heatmap(gapminder.corr(), square=True, cmap='RdYlGn')
 
 
+###########################################
+#Ajuste del model y metricas de renimiento#
+###########################################
+
+#Habiendo entrenado su modelo, su próxima tarea es evaluar su desempeño.
+
+#scikit-learn permite evaluar el desempeño de su modelo de una manera más matizada.
+
+#A continuación, aprenda a optimizar sus modelos de clasificación y regresión mediante el ajuste de hiperparámetros.
+
+#En clasificacion hemos visto que se puede usar la precisión fracción de muestras clasificadas correctamente, para medir el rendimiento del modelo.
+
+#Sin embargo, la presición no siempre es una métrica útil.
+
+#Por ejemplo consideremos un problema de clasificar spam y no spam tal que el 99% son reales y 1% son spam.
+
+#Si el modelo predice solo el 99% de los correos que no son Spam la intuición nos dice que tienen una presición de 99%.
+#Sin embargo se hace un trabajo horrible para predecir el spam
+
+#La situación en la que una clase es más frecuente se llama desequilibrio de clases.
+
+#Esta es una situación muy común en la práctica y requiere una métrica más matizada para evaluar el desempeño de nuestro modelo.
+
+#Dado un clasificador binario, como nuestro ejemplo de correo electrónico no deseado, podemos elaborar una matriz de 2x2
+#Llamada matriz de confusión la cual resume el rendimiento predictivo 
 
 
 
