@@ -300,57 +300,35 @@ sns.heatmap(gapminder.corr(), square=True, cmap='RdYlGn')
 #Ajuste del model y metricas de renimiento#
 ###########################################
 
-#Habiendo entrenado su modelo, su próxima tarea es evaluar su desempeño.
+#La precisión en ocasiones no es una métrica de desempeño muy buena, se pueden tener en los datos un desequilibrio de clases.
 
-#scikit-learn permite evaluar el desempeño de su modelo de una manera más matizada.
-
-#A continuación, aprenda a optimizar sus modelos de clasificación y regresión mediante el ajuste de hiperparámetros.
-
-#En clasificacion hemos visto que se puede usar la precisión fracción de muestras clasificadas correctamente, para medir el rendimiento del modelo.
-
-#Sin embargo, la presición no siempre es una métrica útil.
-
-#Por ejemplo consideremos un problema de clasificar spam y no spam tal que el 99% son reales y 1% son spam.
-
-#Si el modelo predice solo el 99% de los correos que no son Spam la intuición nos dice que tienen una presición de 99%.
-#Sin embargo se hace un trabajo horrible para predecir el spam
-
-#La situación en la que una clase es más frecuente se llama desequilibrio de clases.
+#Una ejemplo de interpretación erronea sería tener datos con 2 clases No Spam con un 99% de representatividad y Spam con un 1%.
+#Nuestro modelo podría cometer el error de clasificar bien los correos no spam dando un 99% de precisión,
+#pero el modelo hace un pesimo trabajo para clasificar los correos Spam, por lo que no nos esta ayudando a resolver el problema.
 
 #Esta es una situación muy común en la práctica y requiere una métrica más matizada para evaluar el desempeño de nuestro modelo.
 
 #Dado un clasificador binario, como nuestro ejemplo de correo electrónico no deseado, podemos elaborar una matriz de 2x2
-#Llamada matriz de confusión la cual resume el rendimiento predictivo 
+#Llamada matriz de confusión la cual resume el rendimiento predictivo.
 
+#              Predicted: Spam Email   Predicted: Real Email
+#Spam Email    True Positive           False Negative
+#Real Email    False Positive          True Negative
 
+#¿Como recuperar la precisión de la matriz de confusión
 
+# Accuracy : Tp + Tn / Tp + Tn + Fp + Fn
 
+#Existen otras métricas que pueden calcularse fácilmente a partir de la matriz:
+    
+    # Precisión (VPP):  Tp / (Tp + Fp) (En el ejemplo del Spam, es el número de Spam correctamente etiquetado)
+    
+    # Sensibilidad : Tp / (Tp + Fn) (Tasa de aciertos o tasa de verdaderos positivos)
+    
+    # F1score : 2 * ( (precision * sensibilidad) / (precision + recall) )
+    
+    
+#Alta precisión: no se prevén muchos correos electrónicos reales como spam
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#Alta sensibilidad: predice correctamente la mayoría de los correos electrónicos no deseados.
 
