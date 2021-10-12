@@ -89,8 +89,9 @@ Created on Sat Oct  9 16:09:35 2021
 
 import os
 os.listdir()
-os.chdir("C:\\Users\\crf005r\\Documents\\3_GitHub\\Resumenes-Python\\4_Machine Learning Scientist")
-         #"C:\\Users\\Maste\\Documents\\1_Github\\Resumenes-Python\\4_Machine Learning Scientist"
+os.chdir("C:\\Users\\Maste\\Documents\\1_Github\\Resumenes-Python\\4_Machine Learning Scientist")
+         #"C:\\Users\\crf005r\\Documents\\3_GitHub\\Resumenes-Python\\4_Machine Learning Scientist"
+         
 
 import matplotlib.pyplot as plt 
 import plot_classifier as plt_cls
@@ -332,3 +333,13 @@ sns.heatmap(gapminder.corr(), square=True, cmap='RdYlGn')
 
 #Alta sensibilidad: predice correctamente la mayoría de los correos electrónicos no deseados.
 
+#---
+#Aplicando las métricas de evaluación al modelo KNN anteriormente calculado (línea 194)
+
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+
+#Matriz de confusión
+confusion_matrix(y_test, y_pred)
+
+report_classification = classification_report(y_test, y_pred)
