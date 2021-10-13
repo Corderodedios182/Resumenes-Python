@@ -297,9 +297,9 @@ import seaborn as sns
 sns.heatmap(gapminder.corr(), square=True, cmap='RdYlGn')
 
 
-###########################################
-#Ajuste del model y metricas de renimiento#
-###########################################
+############################################
+#Ajuste del model y metricas de rendimiento#
+############################################
 
 #La precisión en ocasiones no es una métrica de desempeño muy buena, se pueden tener en los datos un desequilibrio de clases.
 
@@ -340,6 +340,69 @@ from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 
 #Matriz de confusión
+
+#               Predict : republicano    Predict : democrata
+#republicano    tn                       fp
+#democrata      fn                       tp
+
 confusion_matrix(y_test, y_pred)
+tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+print("True Negative : " , tn)
+print("False Positive : " , fp)
+print("False Negative : " , fn)
+print("True positive : " , tp)
 
 report_classification = classification_report(y_test, y_pred)
+
+#Curva ROC (Reciever Operating Carcteristic)
+
+#Es un gráfico de la tasa de verdaderos positivos contra la tasa de falsos positivos para los diferentes puntos de corte posibles de una prueba de diagnóstico.
+
+#Una curva ROC demuestra varias cosas:
+
+#1) Muestra el compromiso entre sensibilidad y especificidad (cualquier aumento de sensibilidad irá acompañado de una disminución de la especificidad).
+
+#2) Cuanto más se acerque la curva al borde izquierdo y luego al borde superior del espacio ROC, más precisa será la prueba.
+
+#3) Cuanto más se acerque la curva a la diagonal de 45 grados del espacio ROC, menos precisa será la prueba.
+
+#4) El área bajo la curva es una medida de la precisión de la prueba.
+
+from sklearn.metrics import roc_curve
+
+fpr, tpr, thresholds = roc_curve(y_test, y_pred)
+
+plt.rcParams['figure.figsize'] = [5, 5]
+plt.plot([0,1],[0,1], 'k--')
+plt.plot(fpr, tpr, label = 'Logistic Regression')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Logistic Regresion ROC Curve')
+plt.show()
+
+#Area bajo la curva
+from sklearn.metrics import roc_auc_score
+roc_auc_score(y_test,y_pred)
+
+#AUC validación cruzada
+from sklearn.model_selection import cross_val_score
+cv_auc = cross_val_score(knn, X, y , cv = 5, scoring = 'roc_auc')
+print("AUC computando 5-fold validacion cruzada: {}".format(cv_auc))
+
+
+#Validación cruzada
+
+#Ahora, antes de entrar en los detalles del ajuste de Hyperparamter, comprendamos el concepto de validación cruzada.
+
+#El rendimiento del modelo entrenado depende de la forma en que se dividen los datos. Puede que no sea representativo de la capacidad del modelo para generalizar.
+
+#La solución es la validación cruzada.
+
+#La validación cruzada es una técnica para evaluar modelos predictivos mediante la división de la muestra original en un conjunto de entrenamiento para entrenar el modelo y un conjunto de prueba para evaluarlo.
+
+#En la validación cruzada de k veces, la muestra original se divide al azar en k submuestras de igual tamaño. De las k submuestras, una sola submuestra se retiene como datos de validación para probar el modelo, y las k-1 submuestras restantes se utilizan como datos de entrenamiento. Luego, el proceso de validación cruzada se repite k veces (los pliegues), y cada una de las k submuestras se utiliza exactamente una vez como datos de validación. Los k resultados de los pliegues se pueden promediar (o combinar) para producir una sola estimación. La ventaja de este método es que todas las observaciones se utilizan tanto para el entrenamiento como para la validación, y cada observación se utiliza para la validación exactamente una vez.
+
+
+
+
+
