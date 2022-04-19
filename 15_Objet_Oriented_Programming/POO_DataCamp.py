@@ -119,22 +119,3 @@ print((pt.x, pt.y))
 pt.y = 4.0
 print(pt.distance_to_origin())
 
-
-50000*.8
-2920
-(3804 * 12) * 2
-
-50000 
-
-
-
-
-
-
-
-
-
-
-
-
-
