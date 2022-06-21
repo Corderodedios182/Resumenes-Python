@@ -5,6 +5,7 @@ Spyder Editor
 This is a temporary script file.
 """
 
+from botocore.vendored.six import b
 import requests
 import pandas as pd
 
@@ -16,7 +17,7 @@ episode_url=base_url+"episode/"
 class Base():
 	def api_info():
 		return requests.get(base_url).json()
-
+		
 	def schema():
 		temp=requests.get(character_url).json()
 		return temp['info'].keys()
@@ -75,7 +76,13 @@ class Location():
 class Episode():
 
 	def get_all():
-		return requests.get(episode_url).json()
+		a = pd.DataFrame(requests.get("https://rickandmortyapi.com/api/episode/?page=1").json()['results'])
+		b = pd.DataFrame(requests.get("https://rickandmortyapi.com/api/episode/?page=2").json()['results'])
+		c = pd.DataFrame(requests.get("https://rickandmortyapi.com/api/episode/?page=3").json()['results'])
+
+		base = pd.concat([a,b,c])
+
+		return base
 
 	def get(id=None):
 		if id==None:
