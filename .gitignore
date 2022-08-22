@@ -3,3 +3,4 @@
 *.parquet
 *.txt
 *.csv
+*/data
