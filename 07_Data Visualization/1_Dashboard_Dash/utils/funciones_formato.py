@@ -56,8 +56,3 @@ def format_(df):
 
     return df
 
-#Carga de datos
-df = dd.read_parquet('data/*.snappy.parquet')
-
-#Objetos plotly.graph
-df_signal = funciones_formato.format_(df).compute()
