@@ -159,6 +159,27 @@ df_box = df_outlier[df_outlier["señal"].str.contains('hsa12_loopout_dslsprtrdac
 df_box = df_box.loc[:,['señal', 'grado_acero', 'velocidad_linea', 'ancho_slab',
               'status_outlier', 'pct_comparativo_mayo22']]
 
+## -- 2.4 Box plot señales -- ##
+
+df_box = pd.read_csv("data/df_box.csv")
+#df_box = df_day[(df_day["llave_comparativa"].str.contains('hsa12_loopout_eslsactfrc_C1075052638'))]
+#df_box.to_csv("df_box.csv")
+# |
+#                 df_day["llave_comparativa"].str.contains('hsa12_loopout_dsrsprtrdactpst_C1075052648') |
+#                 (df_day["llave_comparativa"].str.contains('hsa12_loopout_eslsactpos_C1075052634'))] 
+
+sns.set(rc={"figure.figsize":(8, 9)}) #width=3, #height=4
+plt.rcParams["axes.titlesize"] = 20
+
+left, right = plt.xlim()
+
+#plt.axhline(y = float(175.5),linewidth=2, color='r')
+#plt.axhline(y = float(225.7),linewidth=2, color='r')
+
+fig = sns.boxplot(x = "Grupo",
+                  y = "value",
+                  data = df_box).set(title = 'Señal respecto a sus rangos ideales.')
+
 #####################
 ## 3. Bases Output ##
 #####################
