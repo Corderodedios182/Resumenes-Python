@@ -22,9 +22,19 @@ df_day = pd.read_csv("data/df_day.csv")
 df_day["signal"] = df_day["llave_comparativa"].str.split("|",expand=True).iloc[:,0]
 
 df_missing_groups = pd.read_csv("data/df_missing_groups.csv")
-df_outlier = pd.read_csv("data/df_outlier.csv")
+df_outlier = pd.read_csv("data/df_outlier.csv").iloc[:,1:]
 
 signals = list(set(df_day["signal"]))
+
+fig_1 = go.Figure(data=[go.Table(
+    header=dict(values=list(df_outlier.columns),
+                fill_color='paleturquoise',
+                align='left'),
+    cells=dict(values=[df_outlier.señal, df_outlier.grado_acero, df_outlier.velocidad_linea, df_outlier.ancho_slab,
+                       df_outlier.dia, df_outlier.status_outlier, df_outlier.pct_comparativo_mayo22],
+               fill_color='lavender',
+               align='left'))
+])
 
 app = dash.Dash()
 app.layout = html.Div([
@@ -59,7 +69,11 @@ def update_layouts(selection):
         marker_size=2,
         line_width=1)
         )
-    
+
     return fig
 
 app.run_server(debug=True, use_reloader=False)  # Turn off reloader if inside Jupyter
+
+
+
+
