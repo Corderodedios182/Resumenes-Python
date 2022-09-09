@@ -22,25 +22,17 @@ df_day = pd.read_csv("data/df_day.csv")
 df_day["signal"] = df_day["llave_comparativa"].str.split("|",expand=True).iloc[:,0]
 
 df_missing_groups = pd.read_csv("data/df_missing_groups.csv")
-df_outlier = pd.read_csv("data/df_outlier.csv").iloc[:,1:]
 
 signals = list(set(df_day["signal"]))
 
-fig_1 = go.Figure(data=[go.Table(
-    header=dict(values=list(df_outlier.columns),
-                fill_color='paleturquoise',
-                align='left'),
-    cells=dict(values=[df_outlier.señal, df_outlier.grado_acero, df_outlier.velocidad_linea, df_outlier.ancho_slab,
-                       df_outlier.dia, df_outlier.status_outlier, df_outlier.pct_comparativo_mayo22],
-               fill_color='lavender',
-               align='left'))
-])
+df_outlier = pd.read_csv("data/df_outlier.csv").iloc[:,1:]
 
 app = dash.Dash()
 app.layout = html.Div([
     dcc.Dropdown(signals, id ='input_select'),
-    dcc.Graph(id = 'fig')
-])
+    dcc.Graph(id = 'fig'),
+    dcc.Graph(id='fig_table')
+    ])
 
 @app.callback(
     Output(component_id = 'fig',
@@ -56,7 +48,7 @@ def update_layouts(selection):
         title = selection
         
     fig = go.Figure()
-
+    
     df_box = df_day[df_day["llave_comparativa"].str.contains(title)]
 
     fig.add_trace(go.Box(
@@ -71,6 +63,41 @@ def update_layouts(selection):
         )
 
     return fig
+
+@app.callback(
+    Output(component_id = 'fig_table',
+           component_property = 'figure'),
+    Input(component_id = 'input_select',
+           component_property = 'value')
+     )
+def update_table(selection):
+
+    title = 'None'
+    if selection:
+        
+        title = selection
+        
+    fig = go.Figure()
+    
+    df_outlier_ = df_outlier[df_outlier["señal"].str.contains(title)]
+
+    trace_0 = go.Figure(data=[go.Table(
+        header=dict(values=list(df_outlier_.columns),
+                    fill_color='paleturquoise',
+                    align='left'),
+        cells=dict(values=[df_outlier_.señal, df_outlier_.grado_acero, df_outlier_.velocidad_linea, df_outlier_.ancho_slab,
+                           df_outlier_.dia, df_outlier_.status_outlier, df_outlier_.pct_comparativo_mayo22],
+                   fill_color='lavender',
+                   align='left'))
+    ])
+
+    layout_0 = go.Layout(template = 'ggplot2')
+
+    fig = go.Figure(data = trace_0,
+                          layout = layout_0)
+
+    return fig
+
 
 app.run_server(debug=True, use_reloader=False)  # Turn off reloader if inside Jupyter
 
