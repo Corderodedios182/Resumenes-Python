@@ -27,9 +27,12 @@ signals = list(set(df_day["signal"]))
 
 df_outlier = pd.read_csv("data/df_outlier.csv").iloc[:,1:]
 
-app = dash.Dash()
+app = dash.Dash(
+    __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}],
+)
+
 app.layout = html.Div([
-    dcc.Dropdown(signals, id ='input_select'),
+    dcc.Dropdown(signals, id ='input_select',multi=True),
     dcc.Graph(id = 'fig'),
     dcc.Graph(id='fig_table')
     ])
@@ -48,8 +51,8 @@ def update_layouts(selection):
         title = selection
         
     fig = go.Figure()
-    
-    df_box = df_day[df_day["llave_comparativa"].str.contains(title)]
+        
+    df_box = df_day[df_day.stack().str.contains('|'.join(title)).any(level=0)]
 
     fig.add_trace(go.Box(
         x = df_box["llave_comparativa"],
@@ -79,7 +82,7 @@ def update_table(selection):
         
     fig = go.Figure()
     
-    df_outlier_ = df_outlier[df_outlier["señal"].str.contains(title)]
+    df_outlier_ = df_outlier[df_outlier.stack().str.contains('|'.join(title)).any(level=0)]
 
     trace_0 = go.Figure(data=[go.Table(
         header=dict(values=list(df_outlier_.columns),
@@ -91,7 +94,12 @@ def update_table(selection):
                    align='left'))
     ])
 
-    layout_0 = go.Layout(template = 'ggplot2')
+    layout_0 = go.Layout(legend = {"x":.9,"y":.5},  margin=dict(l=20, r=20, t=20, b=20),
+                         height = 4400,
+                         showlegend = False,
+                         paper_bgcolor='rgb(243, 243, 243)',
+                         template = 'ggplot2',
+                         plot_bgcolor='rgb(243, 243, 243)')
 
     fig = go.Figure(data = trace_0,
                           layout = layout_0)
@@ -102,5 +110,7 @@ def update_table(selection):
 app.run_server(debug=True, use_reloader=False)  # Turn off reloader if inside Jupyter
 
 
+#3 inputs actualicen los datos
+#hacer prueba poniendo gráficas en funciones
 
 
