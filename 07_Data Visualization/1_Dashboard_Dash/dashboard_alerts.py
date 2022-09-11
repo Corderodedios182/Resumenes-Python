@@ -67,7 +67,8 @@ app.layout = html.Div([
             
             #Visualizaciones
             html.Div([
-                dcc.Graph(id = 'fig')],
+                dcc.Graph(id = 'fig'),
+                dcc.Graph(id = 'fig_1')],
                 id="countGraphContainer",
                 className="pretty_container")],
             id="right-column",
@@ -86,7 +87,7 @@ app.layout = html.Div([
     Input(component_id = 'input_select',
            component_property = 'value')
      )
-def update_layouts(selection):
+def update_fig_0(selection):
 
     title = 'None'
     if selection:
@@ -105,5 +106,31 @@ def update_layouts(selection):
     fig.show()
 
     return fig
+
+@app.callback(
+    Output(component_id = 'fig_1',
+           component_property = 'figure'),
+    Input(component_id = 'input_select',
+           component_property = 'value')
+     )
+def update_fig_1(selection):
+
+    title = 'None'
+    if selection:
+        
+        title = selection
+        
+    fig = go.Figure()
+        
+    fig = px.scatter(
+        df_final[df_final.stack().str.contains('|'.join(title)).any(level=0)],
+        x="status_completitud",
+        y="status_outlier", 
+        color="status_alerta",
+        size='status_cu', 
+        hover_data=['pais'])
+
+    return fig
+
 
 app.run_server(debug=True, use_reloader=False)
