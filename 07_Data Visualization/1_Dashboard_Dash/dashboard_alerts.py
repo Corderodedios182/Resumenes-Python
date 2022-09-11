@@ -6,26 +6,35 @@ Created on Sun Sep 11 09:45:06 2022
 """
 
 # Import required libraries
+import pickle
+import copy
+import pathlib
+import urllib.request
 import dash
+import math
+import datetime as dt
+import pandas as pd
+from dash.dependencies import Input, Output, State, ClientsideFunction
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output, ClientsideFunction
 
-import numpy as np
-import pandas as pd
-import datetime
-from datetime import datetime as dt
-import pathlib
+import plotly.graph_objects as go
 
 app = dash.Dash(
     __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}],
 )
-
-app.title = "Oil & Gas Wells"
+app.title = "Señal Alertas"
 server = app.server
 
 #Load data
 df_day = pd.read_csv("data/df_day.csv")
+df_day["signal"] = df_day["llave_comparativa"].str.split("|",expand=True).iloc[:,0]
+
+df_missing_groups = pd.read_csv("data/df_missing_groups.csv")
+
+signals = list(set(df_day["signal"]))
+
+df_outlier = pd.read_csv("data/df_outlier.csv").iloc[:,1:]
 
 layout = dict(
     autosize=True,
@@ -37,247 +46,129 @@ layout = dict(
     legend=dict(font=dict(size=10), orientation="h"),
     title="Satellite Overview")
 
-def description_card():
-    """
-    :return: A Div containing dashboard title & descriptions.
-    """
-    return html.Div(
-        id="description-card",
-        children=[
-            html.H5("Clinical Analytics"),
-            html.H3("Welcome to the Clinical Analytics Dashboard"),
-            html.Div(
-                id="intro",
-                children="Explore clinic patient volume by time of day, waiting time, and care score. Click on the heatmap to visualize patient experience at different time points.",
-            ),
-        ],
-    )
-
-clinic_list = ["1"]
-admit_list = ["1"]
-all_departments = ["1"]
-
-def generate_control_card():
-    """
-    :return: A Div containing controls for graphs.
-    """
-    return html.Div(
-        id="control-card",
-        children=[
-            html.P("Select Clinic"),
-            dcc.Dropdown(
-                id="clinic-select",
-                options=[{"label": i, "value": i} for i in clinic_list],
-                value=clinic_list[0],
-            ),
-            html.Br(),
-            html.P("Select Check-In Time"),
-            dcc.DatePickerRange(
-                id="date-picker-select",
-                start_date=dt(2014, 1, 1),
-                end_date=dt(2014, 1, 15),
-                min_date_allowed=dt(2014, 1, 1),
-                max_date_allowed=dt(2014, 12, 31),
-                initial_visible_month=dt(2014, 1, 1),
-            ),
-            html.Br(),
-            html.Br(),
-            html.P("Select Admit Source"),
-            dcc.Dropdown(
-                id="admit-select",
-                options=[{"label": i, "value": i} for i in admit_list],
-                value=admit_list[:],
-                multi=True,
-            ),
-            html.Br(),
-            html.Div(
-                id="reset-btn-outer",
-                children=html.Button(id="reset-btn", children="Reset", n_clicks=0),
-            ),
-        ],
-    )
-
-def generate_table_row(id, style, col1, col2, col3):
-    """ Generate table rows.
-    :param id: The ID of table row.
-    :param style: Css style of this row.
-    :param col1 (dict): Defining id and children for the first column.
-    :param col2 (dict): Defining id and children for the second column.
-    :param col3 (dict): Defining id and children for the third column.
-    """
-
-    return html.Div(
-        id=id,
-        className="row table-row",
-        style=style,
-        children=[
-            html.Div(
-                id=col1["id"],
-                style={"display": "table", "height": "100%"},
-                className="two columns row-department",
-                children=col1["children"],
-            ),
-            html.Div(
-                id=col2["id"],
-                style={"textAlign": "center", "height": "100%"},
-                className="five columns",
-                children=col2["children"],
-            ),
-            html.Div(
-                id=col3["id"],
-                style={"textAlign": "center", "height": "100%"},
-                className="five columns",
-                children=col3["children"],
-            ),
-        ],
-    )
-
-def generate_table_row_helper(department):
-    """Helper function.
-    :param: department (string): Name of department.
-    :return: Table row.
-    """
-    return generate_table_row(
-        department,
-        {},
-        {"id": department + "_department", "children": html.B(department)},
-        {
-            "id": department + "wait_time",
-            "children": dcc.Graph(
-                id=department + "_wait_time_graph",
-                style={"height": "100%", "width": "100%"},
-                className="wait_time_graph",
-                config={
-                    "staticPlot": False,
-                    "editable": False,
-                    "displayModeBar": False,
-                },
-                figure={
-                    "layout": dict(
-                        margin=dict(l=0, r=0, b=0, t=0, pad=0),
-                        xaxis=dict(
-                            showgrid=False,
-                            showline=False,
-                            showticklabels=False,
-                            zeroline=False,
-                        ),
-                        yaxis=dict(
-                            showgrid=False,
-                            showline=False,
-                            showticklabels=False,
-                            zeroline=False,
-                        ),
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)",
-                    )
-                },
-            ),
-        },
-        {
-            "id": department + "_patient_score",
-            "children": dcc.Graph(
-                id=department + "_score_graph",
-                style={"height": "100%", "width": "100%"},
-                className="patient_score_graph",
-                config={
-                    "staticPlot": False,
-                    "editable": False,
-                    "displayModeBar": False,
-                },
-                figure={
-                    "layout": dict(
-                        margin=dict(l=0, r=0, b=0, t=0, pad=0),
-                        xaxis=dict(
-                            showgrid=False,
-                            showline=False,
-                            showticklabels=False,
-                            zeroline=False,
-                        ),
-                        yaxis=dict(
-                            showgrid=False,
-                            showline=False,
-                            showticklabels=False,
-                            zeroline=False,
-                        ),
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)",
-                    )
-                },
-            ),
-        },
-    )
-
-def initialize_table():
-    """
-    :return: empty table children. This is intialized for registering all figure ID at page load.
-    """
-
-    # header_row
-    header = [
-        generate_table_row(
-            "header",
-            {"height": "50px"},
-            {"id": "header_department", "children": html.B("Department")},
-            {"id": "header_wait_time_min", "children": html.B("Wait Time Minutes")},
-            {"id": "header_care_score", "children": html.B("Care Score")},
-        )
-    ]
-
-    # department_row
-    rows = [generate_table_row_helper(department) for department in all_departments]
-    header.extend(rows)
-    empty_table = header
-
-    return empty_table
-
 # Create app layout
-app.layout = html.Div(
+app.layout = html.Div([
     
-    id="app-container",
-    children=[
-        # Banner
-        html.Div(
-            id="banner",
-            className="banner",
-            children=[html.Img(src=app.get_asset_url("plotly_logo.png"))],),
-        # Left column
+    html.Div([
+        #Barra de filtros
+        html.Div([
+            
+            html.P("Selección de señales : ", className="control_label"),
+            dcc.Dropdown(signals, id ='input_select',multi=True)],
+            
+            className="pretty_container four columns",
+            id="cross-filter-options"
+            ),
         
-        html.Div(
-            id="left-column",
-            className="four columns",
-            children=[description_card(), generate_control_card()]
-            + [
-                html.Div(
-                    ["initial child"], id="output-clientside", style={"display": "none"}
-                )
-            ],
-        ),
-        # Right column
-        html.Div(
+        #Barra de indicadores
+        html.Div([
+            
+            html.Div([
+                html.Div([html.H6(id="well_text"), 
+                          html.P("No. de señales")],
+                         id="wells",
+                         className="mini_container"),
+                html.Div([html.H6(id="gasText"),
+                          html.P("Gas")],
+                         id="gas",
+                         className="mini_container"),
+                html.Div([html.H6(id="oilText"),
+                          html.P("Oil")],
+                         id="oil",
+                         className="mini_container"),
+                
+                html.Div([html.H6(id="waterText"),
+                          html.P("Water")],
+                         id="water",
+                         className="mini_container")],
+                id="info-container",
+                className="row container-display"
+                    ),
+            
+            #Visualizaciones
+            html.Div([
+                dcc.Graph(id = 'fig'),
+                dcc.Graph(id='fig_table')],
+                id="countGraphContainer",
+                className="pretty_container")],
             id="right-column",
-            className="eight columns",
-            children=[
-                # Patient Volume Heatmap
-                html.Div(
-                    id="patient_volume_card",
-                    children=[
-                        html.B("Patient Volume"),
-                        html.Hr(),
-                        dcc.Graph(id="patient_volume_hm"),
-                    ],
-                ),
-                # Patient Wait time by Department
-                html.Div(
-                    id="wait_time_card",
-                    children=[
-                        html.B("Patient Wait Time and Satisfactory Scores"),
-                        html.Hr(),
-                        html.Div(id="wait_time_table", children=initialize_table()),
-                    ],
-                ),
-            ],
-        ),
+            className="eight columns")
+        ],
+        className="row flex-display"
+        )
     ],
-)
+    id="mainContainer",
+    style={"display": "flex", "flex-direction": "column"}
+    )
+
+@app.callback(
+    Output(component_id = 'fig',
+           component_property = 'figure'),
+    Input(component_id = 'input_select',
+           component_property = 'value')
+     )
+def update_layouts(selection):
+
+    title = 'None'
+    if selection:
+        
+        title = selection
+        
+    fig = go.Figure()
+        
+    df_box = df_day[df_day.stack().str.contains('|'.join(title)).any(level=0)]
+
+    fig.add_trace(go.Box(
+        x = df_box["llave_comparativa"],
+        y = df_box["value"],
+        name='kale',
+        boxpoints='all',
+        jitter=0.5,
+        whiskerwidth=0.2,
+        marker_size=2,
+        line_width=1)
+        )
+
+    return fig
+
+@app.callback(
+    Output(component_id = 'fig_table',
+           component_property = 'figure'),
+    Input(component_id = 'input_select',
+           component_property = 'value')
+     )
+def update_table(selection):
+
+    title = 'None'
+    if selection:
+        
+        title = selection
+        
+    fig = go.Figure()
+    
+    df_outlier_ = df_outlier[df_outlier.stack().str.contains('|'.join(title)).any(level=0)]
+
+    trace_0 = go.Figure(data=[go.Table(
+        header=dict(values=list(df_outlier_.columns),
+                    fill_color='paleturquoise',
+                    align='left'),
+        cells=dict(values=[df_outlier_.señal, df_outlier_.grado_acero, df_outlier_.velocidad_linea, df_outlier_.ancho_slab,
+                           df_outlier_.dia, df_outlier_.status_outlier, df_outlier_.pct_comparativo_mayo22],
+                   fill_color='lavender',
+                   align='left'))
+    ])
+
+    layout_0 = go.Layout(legend = {"x":.9,"y":.5},  margin=dict(l=20, r=20, t=20, b=20),
+                         height = 4400,
+                         showlegend = False,
+                         paper_bgcolor='rgb(243, 243, 243)',
+                         template = 'ggplot2',
+                         plot_bgcolor='rgb(243, 243, 243)')
+
+    fig = go.Figure(data = trace_0,
+                          layout = layout_0)
+
+    return fig
+
 
 app.run_server(debug=True, use_reloader=False)
