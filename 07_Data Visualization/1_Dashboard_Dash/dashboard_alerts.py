@@ -102,7 +102,12 @@ def update_fig_0(selection):
     tmp.columns = ["x","status_alerta","y"]
     tmp = tmp[tmp.stack().str.contains('|'.join(title)).any(level=0)]
     
-    fig = px.bar(tmp, x="x", y="y", color="status_alerta", title="Detalle General : País | Línea | Segmento")
+    fig = px.bar(tmp,
+                 x="x",
+                 y="y",
+                 color="status_alerta",
+                 color_discrete_sequence=["green", "yellow", "red"],
+                 title="Detalle General : País | Línea | Segmento")
     fig.show()
 
     return fig
@@ -127,8 +132,10 @@ def update_fig_1(selection):
         x="status_completitud",
         y="status_outlier", 
         color="status_alerta",
+        color_discrete_sequence=["green", "red", "yellow"],
         size='status_cu', 
-        hover_data=['pais'])
+        hover_data=['pais'],
+        title="Detalle Indicadores : Completitud | Outlier | N° Casos Uso")
 
     return fig
 
