@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sun Sep 11 09:45:06 2022
-
-@author: cflorelu
-"""
 import pickle
 import copy
 import pathlib
@@ -19,26 +14,15 @@ import dash_html_components as html
 import plotly.graph_objects as go
 import plotly.express as px
 
-from utils.controls import COUNTRY
+#import plotly.io as pio
+#pio.renderers.default='browser'
+
+#Load data
+df = pd.read_csv("data/df_final.csv")
 
 app = dash.Dash( __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}] )
 app.title = "Señal Alertas"
 server = app.server
-
-# Create controls
-country_options = [ {"label": str(COUNTRY[county]), "value": str(county)} for county in COUNTRY ]
-
-df = pd.read_csv("data/df_final.csv")
-
-layout = dict(
-    autosize=True,
-    automargin=True,
-    margin=dict(l=30, r=30, b=20, t=40),
-    hovermode="closest",
-    plot_bgcolor="#F9F9F9",
-    paper_bgcolor="#F9F9F9",
-    legend=dict(font=dict(size=10), orientation="h"),
-    title="Satellite Overview")
 
 # Create app layout
 app.layout = html.Div([
@@ -104,10 +88,13 @@ app.layout = html.Div([
     style={"display": "flex", "flex-direction": "column"}
     )
 
+# Helper functions
 def filter_dataframe(df, input_country, list_signal):
     dff = df[ (df["pais"].isin([input_country])) 
             & (df.stack().str.contains('|'.join(list_signal)).any(level=0)) ]
     return dff
+
+# Create callbacks
 
 # Selectors -> n_signals text
 @app.callback(
@@ -133,7 +120,8 @@ def update_n_signal(input_country, list_signal):
 def update_n_estables(input_country, list_signal):
     dff = filter_dataframe(df, input_country, list_signal)
     return dff[dff["status_alerta"] == 'estable'].shape[0]
-    
+
+# Main graph -> graph bar
 @app.callback(
     Output(component_id = 'fig',
            component_property = 'figure'),
@@ -161,9 +149,8 @@ def update_fig_0(input_country, list_signal):
     fig.show()
 
     return fig
-#import plotly.io as pio
-#pio.renderers.default='browser'
 
+# Main graph -> graph scatter
 @app.callback(
     Output(component_id = 'fig_1',
            component_property = 'figure'),
@@ -189,5 +176,7 @@ def update_fig_1(input_country, list_signal):
 
     return fig
 
-
-app.run_server(debug=True, use_reloader=False)
+# Main
+if __name__ == "__main__":
+    app.run_server(debug=True, 
+                   use_reloader=False)
