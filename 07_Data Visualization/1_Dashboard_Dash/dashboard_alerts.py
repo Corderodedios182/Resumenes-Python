@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
-import pickle
-import copy
-import pathlib
-import urllib.request
-import dash
-import math
-import datetime as dt
-import pandas as pd
-from dash.dependencies import Input, Output, State, ClientsideFunction
-import dash_core_components as dcc
-import dash_html_components as html
 
+# import dash IO and graph objects
+from dash.dependencies import Input, Output
+
+# Plotly graph objects to render graph plots
 import plotly.graph_objects as go
 import plotly.express as px
+
+# Import dash html, bootstrap components, and tables for datatables
+import dash
+import dash_html_components as html
+import dash_bootstrap_components as dbc
+import dash_core_components as dcc
+
+#Data Processing
+import pandas as pd
 
 #import plotly.io as pio
 #pio.renderers.default='browser'
@@ -75,14 +77,20 @@ app.layout = html.Div([
             html.Div([
                 
                 dcc.Graph(id = 'fig'),
-                dcc.Graph(id = 'fig_1')],
+                dcc.Graph(id = 'fig_1'),
+
+                ],
                 id="countGraphContainer",
                 className="pretty_container")],
             id="right-column",
             className="eight columns")
         ],
         className="row flex-display"
-        )
+        ),
+        
+        dbc.Row(dbc.Col(html.H3(children="Detalle de la información : "))),
+        dcc.Graph(id = 'table_1'),
+        
     ],
     id="mainContainer",
     style={"display": "flex", "flex-direction": "column"}
@@ -175,6 +183,39 @@ def update_fig_1(input_country, list_signal):
         title="Detalle Indicadores : Completitud | Outlier | N° Casos Uso")
 
     return fig
+
+# Main table -> data details
+@app.callback(
+    Output("table_1", "figure"),
+    [
+     Input('input_country', 'value'),
+     Input("list_signal", "value")
+    ])
+def table_details(input_country, list_signal):
+    
+    dff = filter_dataframe(df, input_country,list_signal)
+    
+    trace_0 = go.Table(
+        header=dict(values=list(dff.columns),
+                    fill_color='paleturquoise',
+                    align='center'),
+                
+        cells=dict(values=[dff.pais, dff.dia, dff.linea, dff.segmento, dff.grado_acero, dff.velocidad_linea,
+                           dff.ancho_slab, dff.signal, dff.status_completitud, dff.status_outlier,
+                           dff.status_cu, dff.status_alerta],
+                   fill_color='lavender',
+                   align='center'))
+
+    layout_0 = go.Layout(legend = {"x":.9,"y":.5},  margin=dict(l=20, r=20, t=20, b=20),
+                         height = 4400,
+                         showlegend = False,
+                         paper_bgcolor='rgb(243, 243, 243)',
+                         template = 'ggplot2',
+                         plot_bgcolor='rgb(243, 243, 243)')
+
+    fig_1 = go.Figure(data = [trace_0], layout = layout_0)
+
+    return fig_1
 
 # Main
 if __name__ == "__main__":
