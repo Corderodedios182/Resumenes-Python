@@ -72,9 +72,15 @@ app.layout = html.Div([
             #Indicator Boxes
             html.Div([
                 
-                html.Div([html.H6(id="n_signal"), html.P("No. de señales")], id="number_signal", className="mini_container"),
-                html.Div([html.H6(id="n_estables"), html.P("Estables")], id="estables", className="mini_container"),
-                html.Div([html.H6(id="n_revision"), html.P("Revisión")], id="revision", className="mini_container")
+                html.Div([html.H6(id="n_signal"), html.P("No. de señales")],
+                         id="number_signal",
+                         className="mini_container"),
+                html.Div([html.H6(id="n_estables"), html.P("Estables")],
+                         id="estables",
+                         className="mini_container"),
+                html.Div([html.H6(id="n_revision"), html.P("Revisión")],
+                         id="revision",
+                         className="mini_container")
                 
                 ],
                 id="info-container",
@@ -102,6 +108,31 @@ def filter_dataframe(df, input_country, list_signal):
     dff = df[ (df["pais"].isin([input_country])) 
             & (df.stack().str.contains('|'.join(list_signal)).any(level=0)) ]
     return dff
+
+# Selectors -> n_signals text
+@app.callback(
+    Output("n_signal", "children"),
+    [
+     Input("input_country", "value"),
+     Input("list_signal", "value")
+    ],
+)
+def update_n_signal(input_country, list_signal):
+
+    dff = filter_dataframe(df, input_country, list_signal)
+    return dff.shape[0]
+
+# Selectors -> n_estables text
+@app.callback(
+    Output("n_estables", "children"),
+    [
+     Input("input_country", "value"),
+     Input("list_signal", "value")
+    ],
+)
+def update_n_estables(input_country, list_signal):
+    dff = filter_dataframe(df, input_country, list_signal)
+    return dff[dff["status_alerta"] == 'estable'].shape[0]
     
 @app.callback(
     Output(component_id = 'fig',
@@ -130,6 +161,8 @@ def update_fig_0(input_country, list_signal):
     fig.show()
 
     return fig
+#import plotly.io as pio
+#pio.renderers.default='browser'
 
 @app.callback(
     Output(component_id = 'fig_1',
