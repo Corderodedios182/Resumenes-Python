@@ -19,13 +19,16 @@ import dash_html_components as html
 import plotly.graph_objects as go
 import plotly.express as px
 
-app = dash.Dash(
-    __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}],
-)
+from utils.controls import COUNTRY
+
+app = dash.Dash( __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}] )
 app.title = "Señal Alertas"
 server = app.server
 
-df_final = pd.read_csv("data/df_final.csv")
+# Create controls
+country_options = [ {"label": str(COUNTRY[county]), "value": str(county)} for county in COUNTRY ]
+
+df = pd.read_csv("data/df_final.csv")
 
 layout = dict(
     autosize=True,
@@ -41,32 +44,46 @@ layout = dict(
 app.layout = html.Div([
     
     html.Div([
-        #Barra de filtros
+        
+        #Left side : Filter boxes
         html.Div([
-            
             html.P("País : ", className="control_label"),
-            dcc.Dropdown(df_final["pais"].unique(),
-                         id ='input_select',
-                         multi=True)],
-            
+            dcc.RadioItems(
+                id="input_country",
+                options=[
+                    {"label": "ARG ", "value": "Argentina"},
+                    {"label": "BRA ", "value": "Brasil"},
+                    {"label": "MEX ", "value": "México"}],
+                value="Argentina",
+                labelStyle={"display": "inline-block"},
+                            className="dcc_control",
+                ),
+            html.P("Listado de señales :", className="control_label"),
+            dcc.Dropdown(df["signal"].unique(),
+                         id ='list_signal',
+                         multi=True)
+            ],
             className="pretty_container four columns",
             id="cross-filter-options"
             ),
         
-        #Barra de indicadores
+        #Right side : 
         html.Div([
-            
+            #Indicator Boxes
             html.Div([
+                
                 html.Div([html.H6(id="n_signal"), html.P("No. de señales")], id="number_signal", className="mini_container"),
                 html.Div([html.H6(id="n_estables"), html.P("Estables")], id="estables", className="mini_container"),
                 html.Div([html.H6(id="n_revision"), html.P("Revisión")], id="revision", className="mini_container")
-                    ],
+                
+                ],
                 id="info-container",
                 className="row container-display"
                     ),
             
-            #Visualizaciones
+            #Views : graphs and tables.
             html.Div([
+                
                 dcc.Graph(id = 'fig'),
                 dcc.Graph(id = 'fig_1')],
                 id="countGraphContainer",
@@ -81,26 +98,28 @@ app.layout = html.Div([
     style={"display": "flex", "flex-direction": "column"}
     )
 
+def filter_dataframe(df, input_country, list_signal):
+    dff = df[ (df["pais"].isin([input_country])) 
+            & (df.stack().str.contains('|'.join(list_signal)).any(level=0)) ]
+    return dff
+    
 @app.callback(
     Output(component_id = 'fig',
            component_property = 'figure'),
-    Input(component_id = 'input_select',
-           component_property = 'value')
-     )
-def update_fig_0(selection):
+    [
+     Input("input_country", "value"),
+     Input("list_signal", "value")
+    ])
+def update_fig_0(input_country, list_signal):
 
-    title = 'None'
-    if selection:
-        
-        title = selection
-        
+    dff = filter_dataframe(df, input_country, list_signal)
+    
     fig = go.Figure()
-        
-    tmp = df_final.groupby(["pais","linea","segmento","status_alerta"], as_index = False).count().iloc[:,:5]
+
+    tmp = dff.groupby(["pais","linea","segmento","status_alerta"], as_index = False).count().iloc[:,:5]
     tmp["x"] = tmp['pais'] + "|" + tmp['linea'].astype(str) + "|" + tmp['segmento'].astype(str)
     tmp = tmp.iloc[:,[5,3,4]]
     tmp.columns = ["x","status_alerta","y"]
-    tmp = tmp[tmp.stack().str.contains('|'.join(title)).any(level=0)]
     
     fig = px.bar(tmp,
                  x="x",
@@ -115,20 +134,18 @@ def update_fig_0(selection):
 @app.callback(
     Output(component_id = 'fig_1',
            component_property = 'figure'),
-    Input(component_id = 'input_select',
-           component_property = 'value')
-     )
-def update_fig_1(selection):
+    [
+     Input('input_country', 'value'),
+     Input("list_signal", "value")
+    ])
+def update_fig_1(input_country, list_signal):
 
-    title = 'None'
-    if selection:
-        
-        title = selection
-        
+    dff = filter_dataframe(df, input_country,list_signal)    
+
     fig = go.Figure()
         
     fig = px.scatter(
-        df_final[df_final.stack().str.contains('|'.join(title)).any(level=0)],
+        dff,
         x="status_completitud",
         y="status_outlier", 
         color="status_alerta",

@@ -16,6 +16,9 @@ from dash import Output, Input, dash_table
 
 import plotly.graph_objects as go
 
+#Scripts de apoyo.
+from utils.controls import COUNTRY
+
 #Bases Output (ARG_Dask_signals_process.py)
 
 df_day = pd.read_csv("data/df_day.csv")
@@ -30,6 +33,9 @@ df_outlier = pd.read_csv("data/df_outlier.csv").iloc[:,1:]
 app = dash.Dash(
     __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}],
 )
+
+# Create controls
+country_options = [ {"label": str(COUNTRY[county]), "value": str(county)} for county in COUNTRY ]
 
 app.layout = html.Div([
     dcc.Dropdown(signals, id ='input_select',multi=True),
