@@ -9,7 +9,7 @@ import numpy as np
 import dask.dataframe as dd
 
 @dask.delayed
-def format_(df):
+def format_groups(df):
     """Formato a las señales extraidas.
        Agrupa por segundo para disminuir los datos de milisegundos a segundos.
        Crea etiquetas y grupos de ancho, velocidad y grado de acero.

@@ -14,12 +14,44 @@ import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 
 #Data Processing
+import dask.dataframe as dd
 import pandas as pd
 
 #import plotly.io as pio
 #pio.renderers.default='browser'
 
-#Load data
+#utils
+from utils import values 
+from utils import transformations
+
+#Load data Azure
+date = '20220902'
+
+ddf = dd.read_parquet(f'abfs://arg-landing-iba-sns-ccd2@prodllanding.blob.core.windows.net/date={date}',
+                      storage_options = {"account_name": values.config_values['Signals']['account_name'],
+                                         "sas_token": values.config_values['Signals']['sas_token']},
+                      blocksize = None,
+                      columns = values.config_values['Signals']['columns_file'])
+
+ddf_may = dd.read_csv('abfs://mtto-predictivo-input-arg@prodltransient.blob.core.windows.net/202205_ccd2_iba_ideal.csv',
+                       storage_options = {"account_name": values.config_values['May22']['account_name'],
+                                         "sas_token": values.config_values['May22']['sas_token']},
+                       blocksize = None).compute()
+
+#Transformations
+ddf = transformations.format_groups(ddf).compute()
+
+#Muestra ideal Mayo 2022
+
+#status_completitud
+
+#status_cu
+
+#status_outlier
+
+#status_alerta
+
+#DataBases Master
 df = pd.read_csv("data/df_final.csv")
 
 app = dash.Dash( __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}] )
@@ -209,9 +241,8 @@ def table_details(input_country, list_signal):
     layout_0 = go.Layout(legend = {"x":.9,"y":.5},  margin=dict(l=20, r=20, t=20, b=20),
                          height = 4400,
                          showlegend = False,
-                         paper_bgcolor='rgb(243, 243, 243)',
                          template = 'ggplot2',
-                         plot_bgcolor='rgb(243, 243, 243)')
+                         )
 
     fig_1 = go.Figure(data = [trace_0], layout = layout_0)
 
