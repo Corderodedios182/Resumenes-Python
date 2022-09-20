@@ -17,17 +17,18 @@ import dash_core_components as dcc
 import dask.dataframe as dd
 import pandas as pd
 
-#import plotly.io as pio
-#pio.renderers.default='browser'
+import plotly.io as pio
+pio.renderers.default='browser'
 
 #utils
 from utils import values 
 from utils import transformations
 
 #Load data Azure
-date = '20220902'
+day_gregorate = '2022-09-02'
+day_files = '20220902'
 
-ddf = dd.read_parquet(f'abfs://arg-landing-iba-sns-ccd2@prodllanding.blob.core.windows.net/date={date}',
+ddf_signal = dd.read_parquet(f'abfs://arg-landing-iba-sns-ccd2@prodllanding.blob.core.windows.net/date={day_files}',
                       storage_options = {"account_name": values.config_values['Signals']['account_name'],
                                          "sas_token": values.config_values['Signals']['sas_token']},
                       blocksize = None,
@@ -39,15 +40,60 @@ ddf_may = dd.read_csv('abfs://mtto-predictivo-input-arg@prodltransient.blob.core
                        blocksize = None).compute()
 
 #Transformations
-ddf = transformations.format_groups(ddf).compute()
+ddf_signal = transformations.format_groups(ddf_signal).compute()
+
+#Status_completitud (Por toda la señal)
+ddf_time = transformations.seconds_day(day_gregorate).compute()
+
+ddf_complete = dd.merge(ddf_time,
+                        ddf_signal.iloc[:,:-1],
+                        on='Time',
+                        how='left').compute()
+
+ddf_zero = transformations.missing_groups(ddf_complete, value = 'zero').compute()
+ddf_no_zero = transformations.missing_groups(ddf_complete, value = 'no_zero').compute()
+ddf_null = transformations.missing_groups(ddf_complete, value = 'null').compute()
+
+ddf_missing_groups = pd.merge(ddf_no_zero, ddf_zero, on = 'signals', how = 'outer')
+ddf_missing_groups = pd.merge(ddf_missing_groups, ddf_null, on = "signals", how = 'outer')
+ddf_missing_groups = ddf_missing_groups.fillna(0)
+
+ddf_missing_groups["validacion"] =  ddf_missing_groups["pct_val_zero"] + ddf_missing_groups["pct_val_no_zero"] + ddf_missing_groups["pct_val_null"]
+ddf_missing_groups = ddf_missing_groups.loc[:,['day_x','signals','pct_val_no_zero','pct_val_zero','pct_val_null', 'validacion']]
+ddf_missing_groups = ddf_missing_groups.sort_values("pct_val_zero", ascending = False)
+ddf_missing_groups["day_x"] = day_gregorate
 
 #Muestra ideal Mayo 2022
+ddf_may
 
-#status_completitud
+#status_outlier y status_cu
+ddf_complete = dd.merge(ddf_time,
+                        ddf_signal,
+                        on='Time',
+                        how='left').compute()
 
-#status_cu
+ddf_complete = pd.melt(ddf_complete,
+                       id_vars = ["Time","second_day",'groupings'],
+                       value_vars = ddf_complete.columns[1:])
 
-#status_outlier
+ddf_complete["groupings"] = ddf_complete["groupings"].fillna("no_group")
+ddf_complete["value"] = ddf_complete["value"].fillna(.99)
+
+ddf_complete["key_group"] = ddf_complete["variable"] + " | " + \
+                            ddf_complete["groupings"].astype(str)
+
+tmp_3 = ddf_complete[ddf_complete["variable"] == 'hsa12_loopout_dslsprtrdactpst_C1075052646']
+
+#Cruze y outliers
+
+fig = px.scatter(
+    tmp_3,
+    x = "Time",
+    y = "value", 
+    color = "groupings",
+    title = "Detalle de grupos por señal grado acero | velocidad linea | ancho planchon")
+
+fig.show()
 
 #status_alerta
 

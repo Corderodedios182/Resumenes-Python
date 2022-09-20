@@ -8,6 +8,8 @@ import pandas as pd
 import numpy as np
 import dask.dataframe as dd
 
+day_gregorate = '2022-09-02'
+
 @dask.delayed
 def format_groups(df):
     """Formato a las señales extraidas.
@@ -45,16 +47,22 @@ def format_groups(df):
     df["ancho_slab"] = df[ancho_slab]
     df["ancho_slab"] = np.select(filters, values)
 
-    df["velocidad_linea"] = df[velocidad_linea]#.apply(lambda x: round(x, 1))
+    df["velocidad_linea"] = df[velocidad_linea].apply(lambda x: round(x, 1))
 
     df["grado_acero"] = df[grado_acero]
     
     df = df.drop([ancho_slab, velocidad_linea, grado_acero], axis = 1)
+    
+    df["groupings"] = df["grado_acero"].astype(str) + " | " + \
+                      df["velocidad_linea"].astype(str) + " | " + \
+                      df["ancho_slab"].astype(str)
+                        
+    df = df.drop(["ancho_slab", "velocidad_linea", "grado_acero"], axis = 1)
 
     return df
 
 @dask.delayed
-def seconds_day(day_gregorate = '2022-08-20', periods = 86400):
+def seconds_day(day_gregorate = day_gregorate, periods = 86400):
     """Dataframe con los 84,000 segundos del día"""
     df_time = pd.DataFrame(dict(Time = pd.Series(pd.date_range(f'{day_gregorate} 00:00:00',
                                                                periods = periods, freq = 's'))))
@@ -66,12 +74,7 @@ def seconds_day(day_gregorate = '2022-08-20', periods = 86400):
 @dask.delayed
 def missing_groups(df,
                    value= 'zero',
-                   day_gregorate = '2022-08-20'):
-    """Detección de casos de datos faltantes.
-    Porcentaje de 0
-    Porcentaje de nullos
-    Porcentaje de distintos de cero
-    """
+                   day_gregorate = day_gregorate):
 
     def percentage_zero(df, value = value):
         

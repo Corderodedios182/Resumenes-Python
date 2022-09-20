@@ -42,7 +42,7 @@ config_values = {'Signals': {
                     'sas_token': 'sp=rl&st=2022-04-05T18:14:27Z&se=2023-01-01T03:14:27Z&sv=2020-08-04&sr=c&sig=%2Fqe%2F4HbbTL6Tvx2oYNkF2tV7Qjjdj%2BsO2fDdldVinUU%3D', 
                     'source': 'abfs://arg-landing-iba-sns-ccd2@prodllanding.blob.core.windows.net/date={date_}',
                     'columns_file': signals,
-                    'columns_new': '',
+                    'columns_order': signals,
                     'columns_to_date': ['Time'],
                     'skip_rows': 0,
                     'output_ddf': 'ddf'
