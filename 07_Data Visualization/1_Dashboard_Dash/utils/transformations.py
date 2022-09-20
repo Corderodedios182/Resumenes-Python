@@ -49,7 +49,7 @@ def format_groups(df):
 
     df["velocidad_linea"] = df[velocidad_linea].apply(lambda x: round(x, 1))
 
-    df["grado_acero"] = df[grado_acero]
+    df["grado_acero"] = df[grado_acero].astype(int)
     
     df = df.drop([ancho_slab, velocidad_linea, grado_acero], axis = 1)
     

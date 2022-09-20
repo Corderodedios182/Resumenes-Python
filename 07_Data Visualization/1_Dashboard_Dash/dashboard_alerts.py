@@ -64,7 +64,19 @@ ddf_missing_groups = ddf_missing_groups.sort_values("pct_val_zero", ascending = 
 ddf_missing_groups["day_x"] = day_gregorate
 
 #Muestra ideal Mayo 2022
-ddf_may
+ddf_may["Grado"] = ddf_may["Grado"].astype(int)
+ddf_may["Velocidad"] = ddf_may["Velocidad"].apply(lambda x: round(x, 1))
+
+ddf_may["key_group"] = ddf_may["signal"].astype(str) + " | " + \
+                       ddf_may["Grado"].astype(str) + " | " + \
+                       ddf_may["Velocidad"].astype(str) + " | " + \
+                       ddf_may["Ancho"].astype(str)
+
+ddf_may["iqr"] = ddf_may["Q3"] - ddf_may["Q1"]
+ddf_may["outlierDown"] = ddf_may["Q1"] - (1.5 * ddf_may["iqr"])
+ddf_may["outlierUp"] = ddf_may["Q3"] + (1.5 * ddf_may["iqr"])
+
+ddf_may_tmp = ddf_may[ddf_may["signal"].str.contains("hsa12_loopout_dslsprtrdactpst_C1075052646")]
 
 #status_outlier y status_cu
 ddf_complete = dd.merge(ddf_time,
@@ -82,12 +94,42 @@ ddf_complete["value"] = ddf_complete["value"].fillna(.99)
 ddf_complete["key_group"] = ddf_complete["variable"] + " | " + \
                             ddf_complete["groupings"].astype(str)
 
-tmp_3 = ddf_complete[ddf_complete["variable"] == 'hsa12_loopout_dslsprtrdactpst_C1075052646']
+ddf_complete_tmp = ddf_complete[ddf_complete["variable"] == 'hsa12_loopout_dslsprtrdactpst_C1075052646']
+
+#¿Cuantos grupos se encuentran en las muestras ideales de mayo 2022?
+groups_may =  ddf_may_tmp["key_group"].unique()
+groups_complete_tmp = ddf_complete_tmp["key_group"].unique()
+
+encontradas = [item in groups_complete_tmp for item in groups_may]
+print("No se encontraron ", groups_complete_tmp.shape[0] - sum(encontradas) , " grupos de muestra para está señal")
+
+ddf_complete_tmp = ddf_complete_tmp.merge(ddf_may, on='key_group', how = 'left')
+
+encontrados_may = ddf_complete_tmp[~ddf_complete_tmp["Avg"].isnull()]["key_group"].unique()
+no_encontrados_may = ddf_complete_tmp[ddf_complete_tmp["Avg"].isnull()]["key_group"].unique()
+
+ddf_complete_tmp = ddf_complete_tmp[~ddf_complete_tmp["Avg"].isnull()]
+
+ddf_complete_tmp["status_outlier"] = 'estable'
+
+ddf_complete_tmp.loc[ddf_complete_tmp["value"] >= ddf_complete_tmp["outlierUp"], "status_outlier"] = 'outlierUp'
+ddf_complete_tmp.loc[ddf_complete_tmp["value"] <= ddf_complete_tmp["outlierDown"],"status_outlier"] = 'outlierDown'
+
+df_outlier = ddf_complete_tmp.groupby(["key_group","status_outlier"]).count().iloc[:,0]
+df_tmp = df_outlier.groupby(level = 0).apply(lambda x: 100 * x / float(x.sum())).reset_index().sort_values("key_group", ascending= False)
+
+df_outlier = df_tmp["key_group"].str.split("|",expand=True)
+df_outlier["dia"] = day_gregorate
+df_outlier["status_outlier"] = df_tmp["status_outlier"]
+df_outlier["pct_comparativo_mayo22"] = df_tmp["Time"]
+
+df_outlier.columns = ["señal","grado_acero","velocidad_linea","ancho_slab","dia","status_outlier","pct_comparativo_mayo22"]
+df_outlier = df_outlier[df_outlier["pct_comparativo_mayo22"] != 100]
 
 #Cruze y outliers
 
 fig = px.scatter(
-    tmp_3,
+    ddf_complete_tmp,
     x = "Time",
     y = "value", 
     color = "groupings",
