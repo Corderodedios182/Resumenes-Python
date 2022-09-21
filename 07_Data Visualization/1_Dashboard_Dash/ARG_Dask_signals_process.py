@@ -3,210 +3,171 @@
 Procesos y dataframes outputs de análisis señales.
 """
 
-import pandas as pd
-import numpy as np
-import dask
+#Data Processing
 import dask.dataframe as dd
+import pandas as pd
 
-import matplotlib.pyplot as plt
-import seaborn as sns
+import plotly.io as pio
+pio.renderers.default='browser'
 
-from utils import funciones_formato
+#utils
+from utils import values 
+from utils import transformations
 
-#1. Lectura de datos (Datos dask de prueba)
+#Load data Azure
+day_gregorate = '2022-09-02'
+day_files = '20220902'
 
-#1.0 - Señales a analizar
-df_signals = dd.read_parquet('abfs://desarrollo-data/date=20220820/', 
-                         storage_options={"account_name": "predlsandbox",
-                                          "account_key": "5qMzmvlaPbb605ZTuFrq4pe7N29vjj2Ful0tWDE9i0l0hIL5qguRNFxJ1AblwiemHUKdZkS8AfysgcRGcWsd2w=="},
-                         columns =  ["Time",
-                                     "s4_an2l_ramactwidthboc_C1611", #ancho plataforma
-                                     "s4_hmo_pmac_fmplc_m5043_an2l_hmo_castspeed_C0470", #velodicdad línea
-                                     "grade_number_C1074659440", #grado_acero
-                                     "s4_drv_net_a_ea_seg12_torque_reff_C1074856029", #señales de línea 4 y segmento 12
-                                     "s4_drv_net_a_ea_seg12_torque_ref_C1074856020",
-                                     "hsa12_loopout_eslsprtrdactpst_C1075052642",
-                                     "hsa12_loopout_esrsprtrdactpst_C1075052644",
-                                     "hsa12_loopout_eslsprtrdactrod_C1075052643",
-                                     "hsa12_loopout_esrsprtrdactrod_C1075052645",
-                                     "hsa12_loopout_dslsprtrdactpst_C1075052646",
-                                     "hsa12_loopout_dsrsprtrdactpst_C1075052648",
-                                     "hsa12_loopout_dslsprtrdactrod_C1075052647",
-                                     "hsa12_loopout_dsrsprtrdactrod_C1075052649",
-                                     "hsa12_loopout_eslsactfrc_C1075052638",
-                                     "hsa12_loopout_esrsactfrc_C1075052639",
-                                     "hsa12_loopout_dslsactfrc_C1075052640",
-                                     "hsa12_loopout_dsrsactfrc_C1075052641",
-                                     "hsa12_group_hsaactgauts_C1075052605",
-                                     "hsa12_group_hsaactgaubs_C1075052606",
-                                     "hsa12_group_hsarefgaubs_C1075052604",
-                                     "hsa12_group_hsarefgauts_C1075052603",
-                                     "hsa12_loopout_dslsactpos_C1075052636",
-                                     "hsa12_loopout_dsrsactpos_C1075052637",
-                                     "hsa12_loopout_eslsactpos_C1075052634",
-                                     "hsa12_loopout_esrsactpos_C1075052635",
-                                     "s4_drv_net_a_ea_seg12_linear_speed_C1074856027",
-                                     "s4_drv_net_a_ea_seg012_trq_cmd_C1611726945",
-                                     "s4_drv_net_a_ea_seg12_actual_current_C1074856026",
-                                     "s4_drv_net_a_ea_seg12_speed_ref_C1074856019",
-                                     "hsa12_group_hsasegid_C1075052607"])
+ddf_signal = dd.read_parquet(f'abfs://arg-landing-iba-sns-ccd2@prodllanding.blob.core.windows.net/date={day_files}',
+                      storage_options = {"account_name": values.config_values['Signals']['account_name'],
+                                         "sas_token": values.config_values['Signals']['sas_token']},
+                      blocksize = None,
+                      columns = values.config_values['Signals']['columns_file'])
 
-df_signals = funciones_formato.format_(df_signals).compute()
+ddf_may = dd.read_csv('abfs://mtto-predictivo-input-arg@prodltransient.blob.core.windows.net/202205_ccd2_iba_ideal.csv',
+                       storage_options = {"account_name": values.config_values['May22']['account_name'],
+                                         "sas_token": values.config_values['May22']['sas_token']},
+                       blocksize = None).compute()
 
-#1.1 - Muestra ideal Mayo 2022
-df_mayo = pd.read_csv("C:/Users/cflorelu/Documents/DSVM/data_extra/202205_ccd2_iba_ideal.csv")
+#Transformations
+ddf_signal = transformations.format_groups(ddf_signal).compute()
 
-df_mayo["llave_comparativa"] = df_mayo["signal"] + " | " + \
-                               df_mayo["Grado"].astype(str) + " | " + \
-                               df_mayo["Velocidad"].astype(str) + " | " + \
-                               df_mayo["Ancho"].astype(str)
+#Status_completitud (Por toda la señal)
+ddf_time = transformations.seconds_day(day_gregorate).compute()
 
-df_mayo = df_mayo.loc[:,["llave_comparativa",'Avg', 'Stddev', 'Min', 'Max', 'Q1', 'Q2', 'Q3', 'Count']].sort_values("Count", ascending = False)
+ddf_complete = dd.merge(ddf_time,
+                        ddf_signal.iloc[:,:-1],
+                        on='Time',
+                        how='left').compute()
 
-df_mayo['Avg'] = df_mayo['Avg'].astype(float)
-df_mayo['Stddev'] = df_mayo['Stddev'].astype(float)
-df_mayo['Min'] = df_mayo['Min'].astype(float)
-df_mayo['Max'] = df_mayo['Max'].astype(float)
-df_mayo['Q1'] = df_mayo['Q1'].astype(float)
-df_mayo['Q3']= df_mayo['Q3'].astype(float)
-df_mayo['Count'] = df_mayo['Count']
+ddf_zero = transformations.missing_groups(ddf_complete, value = 'zero').compute()
+ddf_no_zero = transformations.missing_groups(ddf_complete, value = 'no_zero').compute()
+ddf_null = transformations.missing_groups(ddf_complete, value = 'null').compute()
 
-df_mayo["iqr"] = df_mayo["Q3"] - df_mayo["Q1"]
-df_mayo["outlierDown"] = df_mayo["Q1"] - (1.5 * df_mayo["iqr"])
-df_mayo["outlierUp"] = df_mayo["Q3"] + (1.5 * df_mayo["iqr"])
+ddf_missing_groups = pd.merge(ddf_no_zero, ddf_zero, on = 'signals', how = 'outer')
+ddf_missing_groups = pd.merge(ddf_missing_groups, ddf_null, on = "signals", how = 'outer')
+ddf_missing_groups = ddf_missing_groups.fillna(0)
 
-#############
-#2. Análisis#
-#############
+ddf_missing_groups["validacion"] =  ddf_missing_groups["pct_val_zero"] + ddf_missing_groups["pct_val_no_zero"] + ddf_missing_groups["pct_val_null"]
+ddf_missing_groups = ddf_missing_groups.loc[:,['day_x','signals','pct_val_no_zero','pct_val_zero','pct_val_null', 'validacion']]
+ddf_missing_groups = ddf_missing_groups.sort_values("pct_val_zero", ascending = False)
+ddf_missing_groups["day_x"] = day_gregorate
 
-## -- 2.1 - Creación de un rango para Outliers (Comparativo muestra ideal Mayo 2022) -- ##
-df_day = pd.melt(df_signals,
-                 id_vars=["Time",'grado_acero', 'velocidad_linea','ancho_slab'],
-                 value_vars=df_signals.columns[1:])
+ddf_missing_groups.columns = ["day","signal",'pct_val_no_zero','pct_val_zero','pct_val_null', 'validacion']
 
-df_day["llave_comparativa"] = df_day["variable"] + " | " + \
-                              df_day["grado_acero"].astype(str) + " | " + \
-                              df_day["velocidad_linea"].astype(str) + " | " + \
-                              df_day["ancho_slab"].astype(str)
+#Muestra ideal Mayo 2022
+ddf_may["Grado"] = ddf_may["Grado"].astype(int)
+ddf_may["Velocidad"] = ddf_may["Velocidad"].apply(lambda x: round(x, 1))
 
-df_day = df_day.loc[:,['llave_comparativa','Time','value']]
+ddf_may["key_group"] = ddf_may["signal"].astype(str) + " | " + \
+                       ddf_may["Grado"].astype(str) + " | " + \
+                       ddf_may["Velocidad"].astype(str) + " | " + \
+                       ddf_may["Ancho"].astype(str)
 
-df_day = df_day.merge(df_mayo, on='llave_comparativa', how = 'left')
-df_day = df_day[~df_day["Avg"].isnull()]
+ddf_may["iqr"] = ddf_may["Q3"] - ddf_may["Q1"]
+ddf_may["outlierDown"] = ddf_may["Q1"] - (1.5 * ddf_may["iqr"])
+ddf_may["outlierUp"] = ddf_may["Q3"] + (1.5 * ddf_may["iqr"])
 
-df_day["status_outlier"] = 'estable'
+ddf_may_tmp = ddf_may[ddf_may["signal"].str.contains("hsa12_loopout_dslsprtrdactpst_C1075052646")]
 
-df_day.loc[df_day["value"] >= df_day["outlierUp"], "status_outlier"] = 'outlierUp'
-df_day.loc[df_day["value"] <= df_day["outlierDown"],"status_outlier"] = 'outlierDown'
+#status_outlier y status_cu
+ddf_complete = dd.merge(ddf_time,
+                        ddf_signal,
+                        on='Time',
+                        how='left').compute()
 
-df_outlier = df_day.groupby(["llave_comparativa","status_outlier"]).count().iloc[:,0]
-df_tmp = df_outlier.groupby(level = 0).apply(lambda x: 100 * x / float(x.sum())).reset_index().sort_values("llave_comparativa", ascending= False)
+ddf_complete = pd.melt(ddf_complete,
+                       id_vars = ["Time","second_day",'groupings'],
+                       value_vars = ddf_complete.columns[1:])
 
-df_outlier = df_tmp["llave_comparativa"].str.split("|",expand=True)
-df_outlier["dia"] = '2022-08-20'
-df_outlier["status_outlier"] = df_tmp["status_outlier"]
-df_outlier["pct_comparativo_mayo22"] = df_tmp["Time"]
+ddf_complete["groupings"] = ddf_complete["groupings"].fillna("no_group")
+ddf_complete["value"] = ddf_complete["value"].fillna(.99)
 
-df_outlier.columns = ["señal","grado_acero","velocidad_linea","ancho_slab","dia","status_outlier","pct_comparativo_mayo22"]
+ddf_complete["key_group"] = ddf_complete["variable"] + " | " + \
+                            ddf_complete["groupings"].astype(str)
+
+#ddf_complete_tmp = ddf_complete[ddf_complete["variable"] == 'hsa12_loopout_dslsprtrdactpst_C1075052646']
+
+#¿Cuantos grupos se encuentran en las muestras ideales de mayo 2022?
+groups_may =  ddf_may_tmp["key_group"].unique()
+#groups_complete_tmp = ddf_complete_tmp["key_group"].unique()
+groups_complete = ddf_complete["key_group"].unique()
+
+#encontradas = [item in groups_complete_tmp for item in groups_may]
+encontradas = [item in groups_complete for item in groups_may]
+
+#print("No se encontraron ", groups_complete_tmp.shape[0] - sum(encontradas) , " grupos de muestra para está señal")
+print("No se encontraron ", groups_complete.shape[0] - sum(encontradas) , " grupos de muestra para está señal")
+
+#ddf_complete_tmp = ddf_complete_tmp.merge(ddf_may, on='key_group', how = 'left')
+ddf_complete = ddf_complete.merge(ddf_may, on='key_group', how = 'left')
+
+#encontrados_may = ddf_complete_tmp[~ddf_complete_tmp["Avg"].isnull()]["key_group"].unique()
+encontrados_may = ddf_complete[~ddf_complete["Avg"].isnull()]["key_group"].unique()
+
+#no_encontrados_may = ddf_complete_tmp[ddf_complete_tmp["Avg"].isnull()]["key_group"].unique()
+no_encontrados_may = ddf_complete[ddf_complete["Avg"].isnull()]["key_group"].unique()
+
+#ddf_complete_tmp = ddf_complete_tmp[~ddf_complete_tmp["Avg"].isnull()]
+ddf_complete = ddf_complete[~ddf_complete["Avg"].isnull()]
+
+#ddf_complete_tmp["status_outlier"] = 'estable'
+ddf_complete["status_outlier"] = 'estable'
+
+#ddf_complete_tmp.loc[ddf_complete_tmp["value"] >= ddf_complete_tmp["outlierUp"], "status_outlier"] = 'outlierUp'
+ddf_complete.loc[ddf_complete["value"] >= ddf_complete["outlierUp"], "status_outlier"] = 'outlierUp'
+
+#ddf_complete_tmp.loc[ddf_complete_tmp["value"] <= ddf_complete_tmp["outlierDown"],"status_outlier"] = 'outlierDown'
+ddf_complete.loc[ddf_complete["value"] <= ddf_complete["outlierDown"],"status_outlier"] = 'outlierDown'
+
+#df_outlier = ddf_complete_tmp.groupby(["key_group","status_outlier"]).count().iloc[:,0]
+df_outlier = ddf_complete.groupby(["key_group","status_outlier"]).count().iloc[:,0]
+
+df_outlier = df_outlier.groupby(level = 0).apply(lambda x: 100 * x / float(x.sum())).reset_index().sort_values("key_group", ascending= False)
+
+df_outlier.columns = ["key_group","status_outlier","pct_comparativo_mayo22"]
 df_outlier = df_outlier[df_outlier["pct_comparativo_mayo22"] != 100]
 
-## -- 2.2 - Completitud de la información (Porcentaje de valores Null, 0 y distintos de 0) -- ##
+df_outlier = df_outlier.pivot(index = "key_group",
+                              columns = 'status_outlier',
+                              values = "pct_comparativo_mayo22").fillna(0).reset_index()
 
-df_time = funciones_formato.seconds_day(day_gregorate = '2022-08-20').compute()
+df_outlier["validacion_outlier"] = df_outlier["estable"] + df_outlier["outlierDown"] + df_outlier["outlierUp"]
 
-df_complete = dd.merge(df_time,
-                       df_signals,
-                       on='Time',
-                       how='left').compute()
+df_outlier = df_outlier.merge(ddf_may, on='key_group', how = 'inner')
 
-df_zero = funciones_formato.missing_groups(df_complete, value = 'zero').compute()
-df_no_zero = funciones_formato.missing_groups(df_complete, value = 'no_zero').compute()
-df_null = funciones_formato.missing_groups(df_complete, value = 'null').compute()
+df_ideal = df_outlier.merge(ddf_missing_groups, on = 'signal', how = 'inner')
 
-df_missing_groups = pd.merge(df_no_zero, df_zero, on = 'signals', how = 'outer')
-df_missing_groups = pd.merge(df_missing_groups, df_null, on = "signals", how = 'outer')
-df_missing_groups = df_missing_groups.fillna(0)
+df_ideal.to_csv("df_ideal.csv")
 
-df_missing_groups["validacion"] =  df_missing_groups["pct_val_zero"] + df_missing_groups["pct_val_no_zero"] + df_missing_groups["pct_val_null"]
-df_missing_groups = df_missing_groups.loc[:,['day_x','signals','pct_val_no_zero','pct_val_zero','pct_val_null', 'validacion']]
-df_missing_groups = df_missing_groups.sort_values("pct_val_zero", ascending = False)
+df_ideal = df_ideal.loc[:,['day', 'key_group','pct_val_no_zero', 'estable', 'Cantidad_CU','signal']]
 
-df_missing_groups_example = df_missing_groups[df_missing_groups["signals"] == "hsa12_loopout_dslsprtrdactrod_C1075052647"]
+df_ideal["indicador"] = "revision"
 
-## -- 2.3 Box Plot diario -- ##
+(.20 >= .30) & (1 >=.30)
 
-signal_box = 'hsa12_loopout_dslsprtrdactrod_C1075052647 | 7026.0 | 1.0 | 1200-1400'
-df_day["hora"] = df_day["Time"].dt.hour.astype(str)
+df_ideal.loc[(df_ideal["pct_val_no_zero"] >= .60) & ((df_ideal["estable"] >= 60)), "indicador"] = "media"
+df_ideal.loc[(df_ideal["pct_val_no_zero"] >= .80) & ((df_ideal["estable"] >= 80)), "indicador"] = "estable"
 
-df_box = df_day[df_day["llave_comparativa"] == signal_box]
+df_ideal.loc[df_ideal["Cantidad_CU"] == 0, "Cantidad_CU"] = 1
 
-plt.rcParams["axes.titlesize"] = 15
-plt.xticks(rotation=90)
-plt.rcParams['figure.figsize'] = [12, 8]
-left, right = plt.xlim()
+df_ideal["pais"] = "Argentina"
 
-df_box_range = df_mayo[df_mayo["llave_comparativa"] == signal_box]
+df_ideal.to_csv("df_dash.csv")
 
-plt.axhline(y = float(df_box_range["outlierDown"]),linewidth=2, color='r')
-plt.axhline(y = float(df_box_range["outlierUp"]),linewidth=2, color='r')
-plt.subplots_adjust(bottom=0.20)
+#['key_group', 'estable', 'outlierDown_x', 'outlierUp_x',
+# 'validacion_outlier', 'Avg', 'Stddev', 'Min', 'Max', 'Q1', 'Q2', 'Q3',
+# 'Count', 'Cantidad_CU', 'signal', 'Grado', 'Velocidad', 'Ancho', 'iqr',
+# 'outlierDown_y', 'outlierUp_y', , 'pct_val_no_zero',
+# 'pct_val_zero', 'pct_val_null', 'validacion']
 
-fig = sns.boxplot(x = "hora",
-                  y = "value",
-                  data = df_box).set(title = f'{signal_box}, señal | grado | velocidad | ancho')
+#Cruze y outliers
 
-df_box = df_outlier[df_outlier["señal"].str.contains('hsa12_loopout_dslsprtrdactrod_C1075052647')] 
-df_box = df_box.loc[:,['señal', 'grado_acero', 'velocidad_linea', 'ancho_slab',
-              'status_outlier', 'pct_comparativo_mayo22']]
+#fig = px.scatter(
+#    ddf_complete_tmp,
+#    x = "Time",
+#    y = "value", 
+#    color = "groupings",
+#    title = "Detalle de grupos por señal grado acero | velocidad linea | ancho planchon")
 
-## -- 2.4 Box plot señales -- ##
-
-df_box = pd.read_csv("data/df_box.csv")
-#df_box = df_day[(df_day["llave_comparativa"].str.contains('hsa12_loopout_eslsactfrc_C1075052638'))]
-#df_box.to_csv("df_box.csv")
-# |
-#                 df_day["llave_comparativa"].str.contains('hsa12_loopout_dsrsprtrdactpst_C1075052648') |
-#                 (df_day["llave_comparativa"].str.contains('hsa12_loopout_eslsactpos_C1075052634'))] 
-
-sns.set(rc={"figure.figsize":(8, 9)}) #width=3, #height=4
-plt.rcParams["axes.titlesize"] = 20
-
-left, right = plt.xlim()
-
-#plt.axhline(y = float(175.5),linewidth=2, color='r')
-#plt.axhline(y = float(225.7),linewidth=2, color='r')
-
-fig = sns.boxplot(x = "Grupo",
-                  y = "value",
-                  data = df_box).set(title = 'Señal respecto a sus rangos ideales.')
-
-#####################
-## 3. Bases Output ##
-#####################
-
-df_day.to_csv("df_day.csv") #Señal con sus valores descriptivos de la muestra ideal
-
-df_missing_groups.to_csv("df_missing_groups.csv") #Indicador de valores faltantes
-
-df_outlier.to_csv("df_outlier.csv") #Indicador de valores outlier
-
-####################
-## 4. Dash Plotly ##  
-####################
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#fig.show()
