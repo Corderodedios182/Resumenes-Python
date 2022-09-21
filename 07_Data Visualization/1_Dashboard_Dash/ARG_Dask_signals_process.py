@@ -32,28 +32,9 @@ ddf_may = dd.read_csv('abfs://mtto-predictivo-input-arg@prodltransient.blob.core
 #Transformations
 ddf_signal = transformations.format_groups(ddf_signal).compute()
 
-#Status_completitud (Por toda la señal)
+#Status_completitud (Para todas la señales)
 ddf_time = transformations.seconds_day(day_gregorate).compute()
-
-ddf_complete = dd.merge(ddf_time,
-                        ddf_signal.iloc[:,:-1],
-                        on='Time',
-                        how='left').compute()
-
-ddf_zero = transformations.missing_groups(ddf_complete, value = 'zero').compute()
-ddf_no_zero = transformations.missing_groups(ddf_complete, value = 'no_zero').compute()
-ddf_null = transformations.missing_groups(ddf_complete, value = 'null').compute()
-
-ddf_missing_groups = pd.merge(ddf_no_zero, ddf_zero, on = 'signals', how = 'outer')
-ddf_missing_groups = pd.merge(ddf_missing_groups, ddf_null, on = "signals", how = 'outer')
-ddf_missing_groups = ddf_missing_groups.fillna(0)
-
-ddf_missing_groups["validacion"] =  ddf_missing_groups["pct_val_zero"] + ddf_missing_groups["pct_val_no_zero"] + ddf_missing_groups["pct_val_null"]
-ddf_missing_groups = ddf_missing_groups.loc[:,['day_x','signals','pct_val_no_zero','pct_val_zero','pct_val_null', 'validacion']]
-ddf_missing_groups = ddf_missing_groups.sort_values("pct_val_zero", ascending = False)
-ddf_missing_groups["day_x"] = day_gregorate
-
-ddf_missing_groups.columns = ["day","signal",'pct_val_no_zero','pct_val_zero','pct_val_null', 'validacion']
+ddf_missing_groups = transformations.group_completeness(ddf_time, ddf_signal)
 
 #Muestra ideal Mayo 2022
 ddf_may["Grado"] = ddf_may["Grado"].astype(int)

@@ -75,6 +75,7 @@ def seconds_day(day_gregorate = day_gregorate, periods = 86400):
 def missing_groups(df,
                    value= 'zero',
                    day_gregorate = day_gregorate):
+    """Dataframe con los diferentes porcentajes de valores faltantes en señales"""
 
     def percentage_zero(df, value = value):
         
@@ -86,15 +87,15 @@ def missing_groups(df,
             return df.isnull().sum(axis=0)
     
     if (value == 'zero'):
-        pct_val = "pct_val_zero"
+        pct_val = "pct_val_equal_zero"
     elif (value == 'no_zero'):
-        pct_val = "pct_val_no_zero"
+        pct_val = "pct_val_no_zeros"
     else:
         pct_val = "pct_val_null"
         
     df["day"] = df['Time'].dt.floor("D")
     df = df.groupby(["day"]).apply(percentage_zero)
-    df = df/86400
+    df = (df/86400) * 100
     df = df.drop(['Time', 'second_day', 'day'], axis =1)
     df = df.transpose().reset_index()
     df = pd.melt(df, id_vars=["index"], value_vars=df.columns[1:])
@@ -104,3 +105,28 @@ def missing_groups(df,
     df = df.sort_values(by = pct_val, ascending = False)
     
     return df
+
+def group_completeness(ddf_time,
+                       ddf_signal):
+    
+    ddf_complete = dd.merge(ddf_time,
+                            ddf_signal.iloc[:,:-1],
+                            on='Time',
+                            how='left').compute()
+
+    ddf_zero    = missing_groups(ddf_complete, value = 'zero').compute()
+    ddf_no_zero = missing_groups(ddf_complete, value = 'no_zero').compute()
+    ddf_null    = missing_groups(ddf_complete, value = 'null').compute()
+
+    ddf_missing_groups = pd.merge(ddf_no_zero, ddf_zero, on = 'signals', how = 'outer')
+    ddf_missing_groups = pd.merge(ddf_missing_groups, ddf_null, on = "signals", how = 'outer')
+    ddf_missing_groups = ddf_missing_groups.fillna(0)
+    ddf_missing_groups["validacion"] =  ddf_missing_groups["pct_val_equal_zero"] + ddf_missing_groups["pct_val_no_zeros"] + ddf_missing_groups["pct_val_null"]
+    ddf_missing_groups = ddf_missing_groups.loc[:,['day_x','signals','pct_val_no_zeros','pct_val_equal_zero','pct_val_null', 'validacion']]
+    ddf_missing_groups = ddf_missing_groups.sort_values("pct_val_equal_zero", ascending = False)
+    ddf_missing_groups["day_x"] = day_gregorate
+    ddf_missing_groups.columns = ["day","signal",'pct_val_no_zeros','pct_val_equal_zero','pct_val_null', 'validacion']
+
+    return ddf_missing_groups
+
+
