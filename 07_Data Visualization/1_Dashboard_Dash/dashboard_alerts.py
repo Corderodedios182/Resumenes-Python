@@ -63,6 +63,8 @@ ddf_missing_groups = ddf_missing_groups.loc[:,['day_x','signals','pct_val_no_zer
 ddf_missing_groups = ddf_missing_groups.sort_values("pct_val_zero", ascending = False)
 ddf_missing_groups["day_x"] = day_gregorate
 
+ddf_missing_groups.columns = ["day","signal",'pct_val_no_zero','pct_val_zero','pct_val_null', 'validacion']
+
 #Muestra ideal Mayo 2022
 ddf_may["Grado"] = ddf_may["Grado"].astype(int)
 ddf_may["Velocidad"] = ddf_may["Velocidad"].apply(lambda x: round(x, 1))
@@ -116,31 +118,55 @@ ddf_complete_tmp.loc[ddf_complete_tmp["value"] >= ddf_complete_tmp["outlierUp"],
 ddf_complete_tmp.loc[ddf_complete_tmp["value"] <= ddf_complete_tmp["outlierDown"],"status_outlier"] = 'outlierDown'
 
 df_outlier = ddf_complete_tmp.groupby(["key_group","status_outlier"]).count().iloc[:,0]
-df_tmp = df_outlier.groupby(level = 0).apply(lambda x: 100 * x / float(x.sum())).reset_index().sort_values("key_group", ascending= False)
+df_outlier = df_outlier.groupby(level = 0).apply(lambda x: 100 * x / float(x.sum())).reset_index().sort_values("key_group", ascending= False)
 
-df_outlier = df_tmp["key_group"].str.split("|",expand=True)
-df_outlier["dia"] = day_gregorate
-df_outlier["status_outlier"] = df_tmp["status_outlier"]
-df_outlier["pct_comparativo_mayo22"] = df_tmp["Time"]
-
-df_outlier.columns = ["señal","grado_acero","velocidad_linea","ancho_slab","dia","status_outlier","pct_comparativo_mayo22"]
+df_outlier.columns = ["key_group","status_outlier","pct_comparativo_mayo22"]
 df_outlier = df_outlier[df_outlier["pct_comparativo_mayo22"] != 100]
+
+df_outlier = df_outlier.pivot(index = "key_group",
+                              columns = 'status_outlier',
+                              values = "pct_comparativo_mayo22").fillna(0).reset_index()
+
+df_outlier["validacion_outlier"] = df_outlier["estable"] + df_outlier["outlierDown"] + df_outlier["outlierUp"]
+
+df_outlier = df_outlier.merge(ddf_may, on='key_group', how = 'inner')
+
+df_ideal = df_outlier.merge(ddf_missing_groups, on = 'signal', how = 'inner')
+
+df_ideal = df_ideal.loc[:,['day', 'key_group','pct_val_no_zero', 'estable', 'Cantidad_CU']]
+
+df_ideal["indicador"] = "revision"
+
+(.20 >= .30) & (1 >=.30)
+
+df_ideal.loc[(df_ideal["pct_val_no_zero"] >= .60) & ((df_ideal["estable"] >= 60)), "indicador"] = "media"
+df_ideal.loc[(df_ideal["pct_val_no_zero"] >= .80) & ((df_ideal["estable"] >= 80)), "indicador"] = "estable"
+
+df_ideal.loc[df_ideal["Cantidad_CU"] == 0, "Cantidad_CU"] = 1
+
+df_ideal["pais"] = "Argentina"
+
+#['key_group', 'estable', 'outlierDown_x', 'outlierUp_x',
+# 'validacion_outlier', 'Avg', 'Stddev', 'Min', 'Max', 'Q1', 'Q2', 'Q3',
+# 'Count', 'Cantidad_CU', 'signal', 'Grado', 'Velocidad', 'Ancho', 'iqr',
+# 'outlierDown_y', 'outlierUp_y', , 'pct_val_no_zero',
+# 'pct_val_zero', 'pct_val_null', 'validacion']
 
 #Cruze y outliers
 
-fig = px.scatter(
-    ddf_complete_tmp,
-    x = "Time",
-    y = "value", 
-    color = "groupings",
-    title = "Detalle de grupos por señal grado acero | velocidad linea | ancho planchon")
+#fig = px.scatter(
+#    ddf_complete_tmp,
+#    x = "Time",
+#    y = "value", 
+#    color = "groupings",
+#    title = "Detalle de grupos por señal grado acero | velocidad linea | ancho planchon")
 
-fig.show()
+#fig.show()
 
 #status_alerta
 
 #DataBases Master
-df = pd.read_csv("data/df_final.csv")
+#df_dash = pd.read_csv("data/df_final.csv")
 
 app = dash.Dash( __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}] )
 app.title = "Señal Alertas"
@@ -165,7 +191,7 @@ app.layout = html.Div([
                             className="dcc_control",
                 ),
             html.P("Listado de señales :", className="control_label"),
-            dcc.Dropdown(df["signal"].unique(),
+            dcc.Dropdown(df_ideal["key_group"].unique(),
                          id ='list_signal',
                          multi=True)
             ],
@@ -234,7 +260,7 @@ def filter_dataframe(df, input_country, list_signal):
 )
 def update_n_signal(input_country, list_signal):
 
-    dff = filter_dataframe(df, input_country, list_signal)
+    dff = filter_dataframe(df_ideal, input_country, list_signal)
     return dff.shape[0]
 
 # Selectors -> n_estables text
@@ -246,8 +272,8 @@ def update_n_signal(input_country, list_signal):
     ],
 )
 def update_n_estables(input_country, list_signal):
-    dff = filter_dataframe(df, input_country, list_signal)
-    return dff[dff["status_alerta"] == 'estable'].shape[0]
+    dff = filter_dataframe(df_ideal, input_country, list_signal)
+    return dff[dff["indicador"] == 'estable'].shape[0]
 
 # Main graph -> graph bar
 @app.callback(
@@ -259,11 +285,11 @@ def update_n_estables(input_country, list_signal):
     ])
 def update_fig_0(input_country, list_signal):
 
-    dff = filter_dataframe(df, input_country, list_signal)
+    dff = filter_dataframe(df_ideal, input_country, list_signal)
     
     fig = go.Figure()
 
-    tmp = dff.groupby(["pais","linea","segmento","status_alerta"], as_index = False).count().iloc[:,:5]
+    tmp = dff.groupby(["pais","key_group","indicador"], as_index = False).count().iloc[:,:5]
     tmp["x"] = tmp['pais'] + "|" + tmp['linea'].astype(str) + "|" + tmp['segmento'].astype(str)
     tmp = tmp.iloc[:,[5,3,4]]
     tmp.columns = ["x","status_alerta","y"]
@@ -288,7 +314,7 @@ def update_fig_0(input_country, list_signal):
     ])
 def update_fig_1(input_country, list_signal):
 
-    dff = filter_dataframe(df, input_country,list_signal)    
+    dff = filter_dataframe(df_ideal, input_country,list_signal)    
 
     fig = go.Figure()
         
@@ -313,7 +339,7 @@ def update_fig_1(input_country, list_signal):
     ])
 def table_details(input_country, list_signal):
     
-    dff = filter_dataframe(df, input_country,list_signal)
+    dff = filter_dataframe(df_ideal, input_country,list_signal)
     
     trace_0 = go.Table(
         header=dict(values=list(dff.columns),
