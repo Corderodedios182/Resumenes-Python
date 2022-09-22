@@ -121,11 +121,11 @@ def group_completeness(ddf_time,
     ddf_missing_groups = pd.merge(ddf_no_zero, ddf_zero, on = 'signals', how = 'outer')
     ddf_missing_groups = pd.merge(ddf_missing_groups, ddf_null, on = "signals", how = 'outer')
     ddf_missing_groups = ddf_missing_groups.fillna(0)
-    ddf_missing_groups["validacion"] =  ddf_missing_groups["pct_val_equal_zero"] + ddf_missing_groups["pct_val_no_zeros"] + ddf_missing_groups["pct_val_null"]
-    ddf_missing_groups = ddf_missing_groups.loc[:,['day_x','signals','pct_val_no_zeros','pct_val_equal_zero','pct_val_null', 'validacion']]
+    ddf_missing_groups["sum_validation_completeness"] =  ddf_missing_groups["pct_val_equal_zero"] + ddf_missing_groups["pct_val_no_zeros"] + ddf_missing_groups["pct_val_null"]
+    ddf_missing_groups = ddf_missing_groups.loc[:,['day_x','signals','pct_val_no_zeros','pct_val_equal_zero','pct_val_null', 'sum_validation_completeness']]
     ddf_missing_groups = ddf_missing_groups.sort_values("pct_val_equal_zero", ascending = False)
     ddf_missing_groups["day_x"] = day_gregorate
-    ddf_missing_groups.columns = ["day","signal",'pct_val_no_zeros','pct_val_equal_zero','pct_val_null', 'validacion']
+    ddf_missing_groups.columns = ["day","signal",'pct_val_no_zeros','pct_val_equal_zero','pct_val_null', 'sum_validation_completeness']
 
     return ddf_missing_groups
 

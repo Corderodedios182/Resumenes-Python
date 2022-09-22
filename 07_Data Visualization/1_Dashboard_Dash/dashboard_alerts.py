@@ -20,25 +20,21 @@ import pandas as pd
 #pio.renderers.default='browser'
 
 #DataBases Master
+df_comparative_sample = pd.read_csv("data/df_comparative_sample.csv")
+
 df_dash = pd.read_csv("data/df_dash.csv")
-#formato de datos para desplegar mejor la tabla en front end
+
 df_ideal = pd.read_csv("data/df_ideal.csv")
 
-df_ideal['pais'] = 'Argentina'
-df_ideal = df_ideal.loc[:,['pais','day', 'Avg', 'Stddev', 'Min', 'Max', 'Q1', 'Q2', 'Q3',
-                           'Count', 'Cantidad_CU', 'signal', 'Grado', 'Velocidad', 'Ancho', 'iqr',
-                           'outlierDown_y', 'outlierUp_y', 'pct_val_no_zero',
-                           'pct_val_zero', 'pct_val_null', 'validacion']]
-
+#Filtros ddebbug
 input_country = 'Argentina'
 list_signal = ["hsa12_loopout_eslsprtrdactpst_C1075052642",
                "hsa12_loopout_esrsprtrdactpst_C1075052644",
                "hsa12_loopout_eslsprtrdactrod_C1075052643",
                "hsa12_loopout_esrsprtrdactrod_C1075052645"]
 
-
 app = dash.Dash( __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}] )
-app.title = "Señal Alertas"
+app.title = "Monitorea Predictivo"
 server = app.server
 
 # Create app layout
@@ -73,16 +69,21 @@ app.layout = html.Div([
             #Indicator Boxes
             html.Div([
                 
-                html.Div([html.H6(id="n_signal"), html.P("No. de señales")],
-                         id="number_signal",
+                html.Div([html.H6(id="n_signal"),
+                          html.P("No. de señales")],
                          className="mini_container"),
-                html.Div([html.H6(id="n_estables"), html.P("Estables")],
-                         id="estables",
-                         className="mini_container"),
-                html.Div([html.H6(id="n_revision"), html.P("Revisión")],
-                         id="revision",
-                         className="mini_container")
                 
+                html.Div([html.H6(id="n_groups"),
+                          html.P("Grupos")],
+                         className="mini_container"),
+                
+                html.Div([html.H6(id="n_groups_found"),
+                          html.P("Grupos encontrados")],
+                         className="mini_container"),
+                
+                html.Div([html.H6(id="groups_no_found"),
+                          html.P("Grupos no encontrados")],
+                         className="mini_container")
                 ],
                 id="info-container",
                 className="row container-display"
@@ -113,7 +114,7 @@ app.layout = html.Div([
 
 # Helper functions
 def filter_dataframe(df_dash, input_country, list_signal):
-    dff = df_dash[ (df_dash["pais"].isin([input_country])) 
+    dff = df_dash[ (df_dash["country"].isin([input_country])) 
             & (df_dash.stack().str.contains('|'.join(list_signal)).any(level=0)) ]
     return dff
 
@@ -122,27 +123,21 @@ def filter_dataframe(df_dash, input_country, list_signal):
 # Selectors -> n_signals text
 @app.callback(
     Output("n_signal", "children"),
-    [
-     Input("input_country", "value"),
-     Input("list_signal", "value")
-    ],
-)
+    [Input("input_country", "value"),
+     Input("list_signal", "value")])
 def update_n_signal(input_country, list_signal):
 
     dff = filter_dataframe(df_dash, input_country, list_signal)
-    return dff.shape[0]
+    return len(dff["signal"].unique())
 
-# Selectors -> n_estables text
+# Selectors -> n_groups text
 @app.callback(
-    Output("n_estables", "children"),
-    [
-     Input("input_country", "value"),
-     Input("list_signal", "value")
-    ],
-)
-def update_n_estables(input_country, list_signal):
+    Output("n_groups", "children"),
+    [Input("input_country", "value"),
+     Input("list_signal", "value")])
+def update_n_groups(input_country, list_signal):
     dff = filter_dataframe(df_dash, input_country, list_signal)
-    return dff[dff["indicador"] == 'estable'].shape[0]
+    return len(dff["key_group"].unique())
 
 # Main graph -> graph bar
 @app.callback(
@@ -158,17 +153,15 @@ def update_fig_0(input_country, list_signal):
     
     fig = go.Figure()
 
-    tmp = dff.groupby(["pais","signal","indicador"], as_index = False).count().iloc[:,:4]
-    #tmp["x"] = tmp['pais'] + "|" + tmp['linea'].astype(str) + "|" + tmp['segmento'].astype(str)
-    #tmp = tmp.iloc[:,[5,3,4]]
-    #tmp.columns = ["x","status_alerta","y"]
+    tmp = dff.groupby(["country","signal","indicator"], as_index = False).count().iloc[:,:4]
+    tmp.columns = ["country","x","indicator","y"]
     
     fig = px.bar(tmp,
-                 x="signal",
-                 y="Unnamed: 0",
-                 color="indicador",
-                 color_discrete_sequence=["green", "yellow", "red"],
-                 title="Detalle General : País | Línea | Segmento")
+                 x="x",
+                 y="y",
+                 color="indicator",
+                 color_discrete_sequence=["green", "red", "yellow"],
+                 title="Conteo de los status de una señal")
     fig.show()
 
     return fig
@@ -189,11 +182,11 @@ def update_fig_1(input_country, list_signal):
         
     fig = px.scatter(
         dff,
-        x="pct_val_no_zero",
-        y="estable", 
-        color="indicador",
-        color_discrete_sequence=["red", "green", "yellow"],
-        size='Cantidad_CU', 
+        x="pct_val_no_zeros",
+        y="within_range", 
+        color="indicator",
+        color_discrete_sequence=["green", "red", "yellow"],
+        size='Cantidad_CU_may22', 
         hover_data=['key_group'],
         title="Detalle Indicadores : Completitud | Outlier | N° Casos Uso")
 
@@ -215,10 +208,15 @@ def table_details(input_country, list_signal):
                     fill_color='paleturquoise',
                     align='center'),
                 
-        cells=dict(values=[dff.pais, dff.day,dff.Avg, dff.Stddev, dff.Min, dff.Max, dff.Q1, dff.Q2, dff.Q3,
-                           dff.Count, dff.Cantidad_CU, dff.signal, dff.Grado, dff.Velocidad, dff.Ancho, dff.iqr,
-                           dff.outlierDown_y, dff.outlierUp_y, dff.pct_val_no_zero,
-                           dff.pct_val_zero, dff.pct_val_null, dff.validacion],
+        cells=dict(values=[dff.country,dff.day, dff.signal, dff.Grado_may22,
+                           dff.Velocidad_may22, dff.Ancho_may22, dff.key_group,
+                           dff.Count_may22, dff.Avg_may22, dff.Stddev_may22, 
+                           dff.Min_may22, dff.Max_may22, dff.Q1_may22,
+                           dff.Q2_may22, dff.Q3_may22, dff.iqr_may22, dff.outlierDown_may22,
+                           dff.outlierUp_may22, dff.Cantidad_CU_may22, dff.pct_val_no_zeros,
+                           dff.pct_val_equal_zero, dff.pct_val_null, dff.sum_validation_completeness,
+                           dff.within_range, dff.out_lower_range, dff.out_upper_range,
+                           dff.sum_validation_ouliter_ranges, dff.indicator],
                    fill_color='lavender',
                    align='center'))
 
