@@ -4,3 +4,4 @@
 *.txt
 *.csv
 */data
+* text=auto

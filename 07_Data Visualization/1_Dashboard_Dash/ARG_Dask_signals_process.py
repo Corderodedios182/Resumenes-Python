@@ -31,6 +31,8 @@ ddf_may = dd.read_csv('abfs://mtto-predictivo-input-arg@prodltransient.blob.core
 #Transformations
 ddf_signal = transformations.format_groups(ddf_signal).compute()
 
+ddf_signal = pd.read_csv("data/ddf_signal.csv")
+
 #Status_completitud (Para todas la señales)
 ddf_time = transformations.seconds_day(day_gregorate).compute()
 ddf_missing_groups = transformations.group_completeness(ddf_time, ddf_signal)
