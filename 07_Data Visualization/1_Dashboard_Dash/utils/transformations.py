@@ -62,7 +62,7 @@ def format_groups(df):
     return df
 
 @dask.delayed
-def seconds_day(day_gregorate = day_gregorate, periods = 86400):
+def seconds_day(day_gregorate = day_gregorate, periods = 86400*6):
     """Dataframe con los 84,000 segundos del día"""
     df_time = pd.DataFrame(dict(Time = pd.Series(pd.date_range(f'{day_gregorate} 00:00:00',
                                                                periods = periods, freq = 's'))))
@@ -122,9 +122,8 @@ def group_completeness(ddf_time,
     ddf_missing_groups = pd.merge(ddf_missing_groups, ddf_null, on = "signals", how = 'outer')
     ddf_missing_groups = ddf_missing_groups.fillna(0)
     ddf_missing_groups["sum_validation_completeness"] =  ddf_missing_groups["pct_val_equal_zero"] + ddf_missing_groups["pct_val_no_zeros"] + ddf_missing_groups["pct_val_null"]
-    ddf_missing_groups = ddf_missing_groups.loc[:,['day_x','signals','pct_val_no_zeros','pct_val_equal_zero','pct_val_null', 'sum_validation_completeness']]
+    ddf_missing_groups = ddf_missing_groups.loc[:,['day','signals','pct_val_no_zeros','pct_val_equal_zero','pct_val_null', 'sum_validation_completeness']]
     ddf_missing_groups = ddf_missing_groups.sort_values("pct_val_equal_zero", ascending = False)
-    ddf_missing_groups["day_x"] = day_gregorate
     ddf_missing_groups.columns = ["day","signal",'pct_val_no_zeros','pct_val_equal_zero','pct_val_null', 'sum_validation_completeness']
 
     return ddf_missing_groups

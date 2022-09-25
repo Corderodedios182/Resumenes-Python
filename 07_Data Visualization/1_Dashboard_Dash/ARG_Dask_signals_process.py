@@ -15,23 +15,29 @@ from utils import values
 from utils import transformations
 
 #Load data Azure
-day_gregorate = '2022-09-02'
+day_gregorate = '2022-09-01'
 day_files = '20220902'
 
-ddf_signal = dd.read_parquet(f'abfs://arg-landing-iba-sns-ccd2@prodllanding.blob.core.windows.net/date={day_files}',
-                      storage_options = {"account_name": values.config_values['Signals']['account_name'],
-                                         "sas_token": values.config_values['Signals']['sas_token']},
-                      blocksize = None,
-                      columns = values.config_values['Signals']['columns_file'])
+#ddf_signal = dd.read_parquet(f'abfs://arg-landing-iba-sns-ccd2@prodllanding.blob.core.windows.net/date={day_files}',
+#                      storage_options = {"account_name": values.config_values['Signals']['account_name'],
+#                                         "sas_token": values.config_values['Signals']['sas_token']},
+#                      blocksize = None,
+#                      columns = values.config_values['Signals']['columns_file'])
 
-ddf_may = dd.read_csv('abfs://mtto-predictivo-input-arg@prodltransient.blob.core.windows.net/202205_ccd2_iba_ideal.csv',
-                       storage_options = {"account_name": values.config_values['May22']['account_name'],
-                                         "sas_token": values.config_values['May22']['sas_token']},
-                       blocksize = None).compute()
+#ddf_may = dd.read_csv('abfs://mtto-predictivo-input-arg@prodltransient.blob.core.windows.net/202205_ccd2_iba_ideal.csv',
+#                       storage_options = {"account_name": values.config_values['May22']['account_name'],
+#                                         "sas_token": values.config_values['May22']['sas_token']},
+#                       blocksize = None).compute()
+
+#ddf_may.to_csv("ddf_may.csv")
+
 #Transformations
-ddf_signal = transformations.format_groups(ddf_signal).compute()
+#ddf_signal = transformations.format_groups(ddf_signal).compute()
 
-ddf_signal = pd.read_csv("data/ddf_signal.csv")
+ddf_signal = dd.read_csv("data/ddf_signal.csv").compute()
+ddf_signal['Time'] = pd.to_datetime(ddf_signal['Time'])
+
+ddf_may = dd.read_csv("data/ddf_may.csv").compute()
 
 #Status_completitud (Para todas la señales)
 ddf_time = transformations.seconds_day(day_gregorate).compute()
