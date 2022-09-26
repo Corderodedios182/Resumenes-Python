@@ -69,21 +69,8 @@ app.layout = html.Div([
             #Indicator Boxes
             html.Div([
                 
-                html.Div([html.H6(id="n_signal"),
-                          html.P("No. de señales")],
-                         className="mini_container"),
+                dcc.Graph(id = 'table_1')
                 
-                html.Div([html.H6(id="n_groups"),
-                          html.P("Grupos")],
-                         className="mini_container"),
-                
-                html.Div([html.H6(id="n_groups_found"),
-                          html.P("Grupos encontrados")],
-                         className="mini_container"),
-                
-                html.Div([html.H6(id="groups_no_found"),
-                          html.P("Grupos no encontrados")],
-                         className="mini_container")
                 ],
                 id="info-container",
                 className="row container-display"
@@ -120,24 +107,35 @@ def filter_dataframe(df_dash, input_country, list_signal):
 
 # Create callbacks
 
-# Selectors -> n_signals text
 @app.callback(
-    Output("n_signal", "children"),
-    [Input("input_country", "value"),
-     Input("list_signal", "value")])
-def update_n_signal(input_country, list_signal):
+    Output("table_1", "figure"),
+    [
+     Input('input_country', 'value'),
+     Input("list_signal", "value")
+    ])
+def table_details(input_country, list_signal):
 
-    dff = filter_dataframe(df_dash, input_country, list_signal)
-    return len(dff["signal"].unique())
+    dff = df_comparative_sample
 
-# Selectors -> n_groups text
-@app.callback(
-    Output("n_groups", "children"),
-    [Input("input_country", "value"),
-     Input("list_signal", "value")])
-def update_n_groups(input_country, list_signal):
-    dff = filter_dataframe(df_dash, input_country, list_signal)
-    return len(dff["key_group"].unique())
+    trace_0 = go.Table(
+        header=dict(values=list(dff.columns),
+                    fill_color='paleturquoise',
+                    align='center'),
+
+        cells=dict(values=[dff.feature,
+                           dff.number],
+                   fill_color='lavender',
+                   align='center'))
+
+    layout_0 = go.Layout(legend = {"x":.9,"y":.5},  margin=dict(l=20, r=20, t=20, b=20),
+                         height = 200,
+                         showlegend = False,
+                         template = 'ggplot2',
+                         )
+
+    fig_1 = go.Figure(data = [trace_0], layout = layout_0)
+
+    return fig_1
 
 # Main graph -> graph bar
 @app.callback(
