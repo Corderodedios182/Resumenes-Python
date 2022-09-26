@@ -94,6 +94,9 @@ app.layout = html.Div([
                 
                 dcc.Graph(id = 'fig'),
                 dcc.Graph(id = 'fig_1'),
+                html.P("Detalle de la información :", className="control_label"),
+                html.Button("Download CSV", id="btn_csv"),
+                dcc.Download(id="download-dataframe-csv")
 
                 ],
                 id="countGraphContainer",
@@ -103,9 +106,6 @@ app.layout = html.Div([
         ],
         className="row flex-display"
         ),
-        
-        dbc.Row(dbc.Col(html.H3(children="Detalle de la información : "))),
-        dcc.Graph(id = 'table_1'),
         
     ],
     id="mainContainer",
@@ -194,41 +194,12 @@ def update_fig_1(input_country, list_signal):
 
 # Main table -> data details
 @app.callback(
-    Output("table_1", "figure"),
-    [
-     Input('input_country', 'value'),
-     Input("list_signal", "value")
-    ])
-def table_details(input_country, list_signal):
-    
-    dff = filter_dataframe(df_ideal, input_country, list_signal)
-    
-    trace_0 = go.Table(
-        header=dict(values=list(dff.columns),
-                    fill_color='paleturquoise',
-                    align='center'),
-                
-        cells=dict(values=[dff.country,dff.day, dff.signal, dff.Grado_may22,
-                           dff.Velocidad_may22, dff.Ancho_may22, dff.key_group,
-                           dff.Count_may22, dff.Avg_may22, dff.Stddev_may22, 
-                           dff.Min_may22, dff.Max_may22, dff.Q1_may22,
-                           dff.Q2_may22, dff.Q3_may22, dff.iqr_may22, dff.outlierDown_may22,
-                           dff.outlierUp_may22, dff.Cantidad_CU_may22, dff.pct_val_no_zeros,
-                           dff.pct_val_equal_zero, dff.pct_val_null, dff.sum_validation_completeness,
-                           dff.within_range, dff.out_lower_range, dff.out_upper_range,
-                           dff.sum_validation_ouliter_ranges, dff.indicator],
-                   fill_color='lavender',
-                   align='center'))
-
-    layout_0 = go.Layout(legend = {"x":.9,"y":.5},  margin=dict(l=20, r=20, t=20, b=20),
-                         height = 4400,
-                         showlegend = False,
-                         template = 'ggplot2',
-                         )
-
-    fig_1 = go.Figure(data = [trace_0], layout = layout_0)
-
-    return fig_1
+    Output("download-dataframe-csv", "data"),
+    Input("btn_csv", "n_clicks"),
+    prevent_initial_call=True,
+)
+def func(n_clicks):
+    return dcc.send_data_frame(df_ideal.to_csv, "información_detalle.csv")
 
 # Main
 if __name__ == "__main__":
