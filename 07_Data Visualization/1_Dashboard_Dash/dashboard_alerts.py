@@ -145,21 +145,24 @@ def table_details(input_country, list_signal):
      Input("input_country", "value"),
      Input("list_signal", "value")
     ])
-def update_fig_0(input_country, list_signal):
+def update_fig_bar(input_country, list_signal):
 
     dff = filter_dataframe(df_dash, input_country, list_signal)
     
     fig = go.Figure()
 
-    tmp = dff.groupby(["country","signal","indicator"], as_index = False).count().iloc[:,:4]
-    tmp.columns = ["country","x","indicator","y"]
+    tmp = dff.groupby(["signal","country","indicator"]).agg({"key_group":"count"})
+    tmp = tmp.groupby(level = 0).apply(lambda x: 100 * x / float(x.sum())).reset_index()
+    tmp.columns = ["signal","country","indicator","porcentaje"]
+    
+    tmp = tmp.sort_values("indicator")
     
     fig = px.bar(tmp,
-                 x="x",
-                 y="y",
+                 x="signal",
+                 y="porcentaje",
                  color="indicator",
-                 color_discrete_sequence=["green", "red", "yellow"],
-                 title="Conteo de los status de una señal")
+                 color_discrete_sequence=["green", "yellow", "red"],
+                 title="Status por señal")
     fig.show()
 
     return fig
@@ -172,9 +175,11 @@ def update_fig_0(input_country, list_signal):
      Input('input_country', 'value'),
      Input("list_signal", "value")
     ])
-def update_fig_1(input_country, list_signal):
+def update_fig_scatter(input_country, list_signal):
 
     dff = filter_dataframe(df_dash, input_country,list_signal)    
+    
+    dff = dff.sort_values("indicator")
 
     fig = go.Figure()
         
@@ -183,7 +188,7 @@ def update_fig_1(input_country, list_signal):
         x="pct_val_no_zeros",
         y="within_range", 
         color="indicator",
-        color_discrete_sequence=["green", "red", "yellow"],
+        color_discrete_sequence=["green", "yellow", "red" ],
         size='Cantidad_CU_may22', 
         hover_data=['key_group'],
         title="Detalle Indicadores : Completitud | Outlier | N° Casos Uso")
