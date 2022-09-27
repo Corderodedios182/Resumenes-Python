@@ -42,9 +42,10 @@ server = app.server
 app.layout = html.Div([
     
     html.Div([
-        
-        #Left side : Filter boxes
+
         html.Div([
+            
+            #Filtros
             html.P("País : ", className="control_label"),
             dcc.RadioItems(
                 id="input_country",
@@ -56,38 +57,34 @@ app.layout = html.Div([
                 labelStyle={"display": "inline-block"},
                             className="dcc_control",
                 ),
+            html.Br(),
             html.P("Listado de señales :", className="control_label"),
             dcc.Dropdown(df_dash["signal"].unique(),
                          id ='list_signal',
                          multi=True),
+            html.Br(),
             dcc.DatePickerRange(
                 id='day',
                 min_date_allowed = datetime.today() + timedelta(days =-5),
                 max_date_allowed = datetime.today(),
                 initial_visible_month = datetime.today() + timedelta(days =-5),
                 end_date = datetime.today()
-                ),   
-            ],
-            className="pretty_container four columns",
-            id="cross-filter-options"
-            ),
-        
-        #Right side : 
-        html.Div([
-            #Indicator Boxes
+                ),
+            html.Br(),
+            html.Br(),
+            #Gráficas 
             html.Div([
-                
                 dcc.Graph(id = 'table_1')
-                
                 ],
                 id="info-container",
                 className="row container-display"
                     ),
-            
+            html.Br(),
             #Views : graphs and tables.
             html.Div([
                 
                 dcc.Graph(id = 'fig'),
+                html.Br(),
                 dcc.Graph(id = 'fig_1'),
                 html.P("Detalle de la información :", className="control_label"),
                 html.Button("Download CSV", id="btn_csv"),
@@ -137,6 +134,7 @@ def table_details(input_country, list_signal):
                    align='center'))
 
     layout_0 = go.Layout(legend = {"x":.9,"y":.5},  margin=dict(l=20, r=20, t=20, b=20),
+                         width=1600,
                          height = 200,
                          showlegend = False,
                          template = 'ggplot2',
