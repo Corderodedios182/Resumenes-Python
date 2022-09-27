@@ -57,4 +57,3 @@ config_values = {'Signals': {
                     'skip_rows': 0,
                     'output_ddf': 'ddf_may'}
                 }
-

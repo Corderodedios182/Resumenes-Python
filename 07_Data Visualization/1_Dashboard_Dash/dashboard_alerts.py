@@ -16,9 +16,6 @@ import dash_core_components as dcc
 #Data Processing
 import pandas as pd
 
-#import plotly.io as pio
-#pio.renderers.default='browser'
-
 #DataBases Master
 df_comparative_sample = pd.read_csv("data/df_comparative_sample.csv")
 

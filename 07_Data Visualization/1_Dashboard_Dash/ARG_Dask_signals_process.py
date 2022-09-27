@@ -2,7 +2,6 @@
 """
 Procesos y dataframes outputs de análisis señales.
 """
-
 #Data Processing
 import dask.dataframe as dd
 import pandas as pd
@@ -17,12 +16,6 @@ from utils import transformations
 #Load data Azure
 day_gregorate = '2022-09-01'
 day_files = '20220902'
-
-#ddf_signal = dd.read_parquet(f'abfs://arg-landing-iba-sns-ccd2@prodllanding.blob.core.windows.net/date={day_files}',
-#                      storage_options = {"account_name": values.config_values['Signals']['account_name'],
-#                                         "sas_token": values.config_values['Signals']['sas_token']},
-#                      blocksize = None,
-#                      columns = values.config_values['Signals']['columns_file'])
 
 #ddf_may = dd.read_csv('abfs://mtto-predictivo-input-arg@prodltransient.blob.core.windows.net/202205_ccd2_iba_ideal.csv',
 #                       storage_options = {"account_name": values.config_values['May22']['account_name'],
@@ -146,9 +139,9 @@ df_dash = df_ideal.loc[:,["country",'day', 'key_group','signal','pct_val_no_zero
 
 #No mandar con index
 #Formato redondeado de números a un digito
-df_ideal.to_csv("data/df_ideal.csv")
-df_ideal.to_csv("data/df_dash.csv")
-comparative_sample.to_csv("data/df_comparative_sample.csv")
+df_ideal.to_csv("data/df_ideal.csv", index=False)
+df_ideal.to_csv("data/df_dash.csv", index=False)
+comparative_sample.to_csv("data/df_comparative_sample.csv", index=False)
 
 #Cruze y outliers
 
