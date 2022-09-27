@@ -15,20 +15,24 @@ import dash_core_components as dcc
 
 #Data Processing
 import pandas as pd
+from datetime import date
+import datetime
+from datetime import datetime, timedelta
 
 #DataBases Master
 df_comparative_sample = pd.read_csv("data/df_comparative_sample.csv")
 
 df_dash = pd.read_csv("data/df_dash.csv")
+df_dash['day'] = pd.to_datetime(df_dash['day']).dt.floor("D")
 
 df_ideal = pd.read_csv("data/df_ideal.csv")
 
 #Filtros ddebbug
 input_country = 'Argentina'
-list_signal = ["hsa12_loopout_eslsprtrdactpst_C1075052642",
-               "hsa12_loopout_esrsprtrdactpst_C1075052644",
-               "hsa12_loopout_eslsprtrdactrod_C1075052643",
-               "hsa12_loopout_esrsprtrdactrod_C1075052645"]
+list_signal = ["hsa12_loopout_esrsprtrdactpst_C1075052644"]
+
+start_date = '2022-09-26'
+end_date = '2022-09-26'
 
 app = dash.Dash( __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}] )
 app.title = "Monitorea Predictivo"
@@ -55,7 +59,14 @@ app.layout = html.Div([
             html.P("Listado de señales :", className="control_label"),
             dcc.Dropdown(df_dash["signal"].unique(),
                          id ='list_signal',
-                         multi=True)
+                         multi=True),
+            dcc.DatePickerRange(
+                id='day',
+                min_date_allowed = datetime.today() + timedelta(days =-5),
+                max_date_allowed = datetime.today(),
+                initial_visible_month = datetime.today() + timedelta(days =-5),
+                end_date = datetime.today()
+                ),   
             ],
             className="pretty_container four columns",
             id="cross-filter-options"
@@ -97,9 +108,10 @@ app.layout = html.Div([
     )
 
 # Helper functions
-def filter_dataframe(df_dash, input_country, list_signal):
+def filter_dataframe(df_dash, input_country, list_signal, start_date, end_date):
     dff = df_dash[ (df_dash["country"].isin([input_country])) 
-            & (df_dash.stack().str.contains('|'.join(list_signal)).any(level=0)) ]
+            & (df_dash.stack().str.contains('|'.join(list_signal)).any(level=0))
+            & (df_dash["day"] >= start_date) & (df_dash["day"] <= end_date)]
     return dff
 
 # Create callbacks
@@ -140,11 +152,13 @@ def table_details(input_country, list_signal):
            component_property = 'figure'),
     [
      Input("input_country", "value"),
-     Input("list_signal", "value")
+     Input("list_signal", "value"),
+     Input("day", "start_date"),
+     Input("day", "end_date")
     ])
-def update_fig_bar(input_country, list_signal):
+def update_fig_bar(input_country, list_signal, start_date, end_date):
 
-    dff = filter_dataframe(df_dash, input_country, list_signal)
+    dff = filter_dataframe(df_dash, input_country, list_signal, start_date, end_date)
     
     fig = go.Figure()
 
@@ -177,11 +191,13 @@ def update_fig_bar(input_country, list_signal):
            component_property = 'figure'),
     [
      Input('input_country', 'value'),
-     Input("list_signal", "value")
+     Input("list_signal", "value"),
+     Input("day", "start_date"),
+     Input("day", "end_date")
     ])
-def update_fig_scatter(input_country, list_signal):
+def update_fig_scatter(input_country, list_signal, start_date, end_date):
 
-    dff = filter_dataframe(df_dash, input_country,list_signal)    
+    dff = filter_dataframe(df_dash, input_country, list_signal, start_date, end_date)
     
     dff = dff.sort_values("indicator")
     dff["pct_val_no_zeros"] = dff["pct_val_no_zeros"]/100
@@ -200,7 +216,6 @@ def update_fig_scatter(input_country, list_signal):
         size='Cantidad_CU_may22', 
         hover_data=['key_group'],
         title="Detalle Indicadores : Completitud | Outlier | N° Casos Uso")
-    
     
     fig.update_yaxes(showline=True, linewidth=2, linecolor='black', mirror=True,
                      ticks="outside", tickwidth=2, tickcolor='crimson', ticklen=10, col=1)
