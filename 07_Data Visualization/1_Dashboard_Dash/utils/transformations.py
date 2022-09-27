@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import dask.dataframe as dd
 
-day_gregorate = '2022-09-02'
+day_gregorate = '2022-21-02'
 
 @dask.delayed
 def format_groups(df):
@@ -72,19 +72,19 @@ def seconds_day(day_gregorate = day_gregorate, periods = 86400*6):
     return df_time
 
 @dask.delayed
-def missing_groups(df,
+def missing_groups(ddf_complete,
                    value= 'zero',
                    day_gregorate = day_gregorate):
     """Dataframe con los diferentes porcentajes de valores faltantes en señales"""
 
-    def percentage_zero(df, value = value):
+    def percentage_zero(ddf_complete, value = value):
         
         if (value == 'zero'):
-            return ((df == 0) & (df.notnull())).sum(axis=0)
+            return ((ddf_complete == 0) & (ddf_complete.notnull())).sum(axis=0)
         elif (value == 'no_zero'):
-            return ((df != 0) & (df.notnull())).sum(axis=0)
+            return ((ddf_complete != 0) & (ddf_complete.notnull())).sum(axis=0)
         else:
-            return df.isnull().sum(axis=0)
+            return ddf_complete.isnull().sum(axis=0)
     
     if (value == 'zero'):
         pct_val = "pct_val_equal_zero"
@@ -93,18 +93,19 @@ def missing_groups(df,
     else:
         pct_val = "pct_val_null"
         
-    df["day"] = df['Time'].dt.floor("D")
-    df = df.groupby(["day"]).apply(percentage_zero)
-    df = (df/86400) * 100
-    df = df.drop(['Time', 'second_day', 'day'], axis =1)
-    df = df.transpose().reset_index()
-    df = pd.melt(df, id_vars=["index"], value_vars=df.columns[1:])
+    ddf_complete["day"] = ddf_complete['Time'].dt.floor("D")
+    ddf_complete = ddf_complete.groupby(["day"]).apply(percentage_zero)
+    ddf_complete = (ddf_complete/86400) * 100
+    ddf_complete = ddf_complete.drop(['Time', 'second_day', 'day'], axis =1)
+    ddf_complete = ddf_complete.transpose().reset_index()
+    ddf_complete = pd.melt(ddf_complete, id_vars=["index"], value_vars = ddf_complete.columns[1:])
     
-    df.columns = ["signals","day",pct_val]
-    df = df[df[pct_val] > 0]
-    df = df.sort_values(by = pct_val, ascending = False)
+    ddf_complete.columns = ["signals","day",pct_val]
+    ddf_complete = ddf_complete[ddf_complete[pct_val] > 0]
+    ddf_complete = ddf_complete.sort_values(by = pct_val, ascending = False)
+    ddf_complete["key"] = ddf_complete["signals"].astype(str) + "_" + ddf_complete["day"].astype(str)
     
-    return df
+    return ddf_complete
 
 def group_completeness(ddf_time,
                        ddf_signal):
@@ -118,13 +119,14 @@ def group_completeness(ddf_time,
     ddf_no_zero = missing_groups(ddf_complete, value = 'no_zero').compute()
     ddf_null    = missing_groups(ddf_complete, value = 'null').compute()
 
-    ddf_missing_groups = pd.merge(ddf_no_zero, ddf_zero, on = 'signals', how = 'outer')
-    ddf_missing_groups = pd.merge(ddf_missing_groups, ddf_null, on = "signals", how = 'outer')
+    ddf_missing_groups = pd.merge(ddf_no_zero, ddf_zero, on = 'key', how = 'outer')
+    ddf_missing_groups = pd.merge(ddf_missing_groups, ddf_null, on = "key", how = 'outer')
     ddf_missing_groups = ddf_missing_groups.fillna(0)
     ddf_missing_groups["sum_validation_completeness"] =  ddf_missing_groups["pct_val_equal_zero"] + ddf_missing_groups["pct_val_no_zeros"] + ddf_missing_groups["pct_val_null"]
     ddf_missing_groups = ddf_missing_groups.loc[:,['day','signals','pct_val_no_zeros','pct_val_equal_zero','pct_val_null', 'sum_validation_completeness']]
     ddf_missing_groups = ddf_missing_groups.sort_values("pct_val_equal_zero", ascending = False)
     ddf_missing_groups.columns = ["day","signal",'pct_val_no_zeros','pct_val_equal_zero','pct_val_null', 'sum_validation_completeness']
+    ddf_missing_groups = ddf_missing_groups[ddf_missing_groups["day"] != 0]
 
     return ddf_missing_groups
 

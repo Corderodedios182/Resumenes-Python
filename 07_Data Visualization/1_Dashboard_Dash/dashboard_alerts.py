@@ -199,7 +199,7 @@ def update_fig_scatter(input_country, list_signal):
     prevent_initial_call=True,
 )
 def func(n_clicks):
-    return dcc.send_data_frame(df_ideal.to_csv, "información_detalle.csv")
+    return dcc.send_data_frame(df_ideal.to_csv, "información_detalle.csv", index=False)
 
 # Main
 if __name__ == "__main__":

@@ -6,15 +6,12 @@ Procesos y dataframes outputs de análisis señales.
 import dask.dataframe as dd
 import pandas as pd
 
-import plotly.io as pio
-pio.renderers.default='browser'
-
 #utils
 from utils import values 
 from utils import transformations
 
 #Load data Azure
-day_gregorate = '2022-09-01'
+day_gregorate = '2022-09-21'
 day_files = '20220902'
 
 #ddf_may = dd.read_csv('abfs://mtto-predictivo-input-arg@prodltransient.blob.core.windows.net/202205_ccd2_iba_ideal.csv',
