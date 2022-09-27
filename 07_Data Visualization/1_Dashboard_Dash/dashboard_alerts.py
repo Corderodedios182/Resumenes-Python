@@ -159,8 +159,15 @@ def update_fig_bar(input_country, list_signal):
                  y="porcentaje",
                  color="indicator",
                  color_discrete_sequence=["green", "yellow", "red"],
+                 width=1600,
+                 height=700,
                  title="Status por señal")
-    fig.show()
+    
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='black', mirror=True,
+                     ticks="outside", tickwidth=2, tickcolor='crimson', ticklen=10, col=1)
+    
+    fig.update_xaxes(ticks="outside", tickwidth=2, tickcolor='crimson', ticklen=4,
+                     constrain="domain",showline=True, linewidth=2, linecolor='black', mirror=True)
 
     return fig
 
@@ -177,6 +184,7 @@ def update_fig_scatter(input_country, list_signal):
     dff = filter_dataframe(df_dash, input_country,list_signal)    
     
     dff = dff.sort_values("indicator")
+    dff["pct_val_no_zeros"] = dff["pct_val_no_zeros"]/100
 
     fig = go.Figure()
         
@@ -186,10 +194,20 @@ def update_fig_scatter(input_country, list_signal):
         y="within_range", 
         color="indicator",
         color_discrete_sequence=["green", "yellow", "red" ],
+        width=1600,
+        height=700,
+        facet_col="indicator",
         size='Cantidad_CU_may22', 
         hover_data=['key_group'],
         title="Detalle Indicadores : Completitud | Outlier | N° Casos Uso")
-
+    
+    
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='black', mirror=True,
+                     ticks="outside", tickwidth=2, tickcolor='crimson', ticklen=10, col=1)
+    
+    fig.update_xaxes(ticks="outside", tickwidth=2, tickcolor='crimson', ticklen=4,
+                     constrain="domain",showline=True, linewidth=2, linecolor='black', mirror=True)
+    
     return fig
 
 # Main table -> data details
