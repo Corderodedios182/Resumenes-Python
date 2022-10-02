@@ -38,41 +38,58 @@ app = dash.Dash( __name__, meta_tags=[{"name": "viewport", "content": "width=dev
 app.title = "Monitorea Predictivo"
 server = app.server
 
-# Create app layout
+####################
+# Create app layout#
+####################
 app.layout = html.Div([
     
+    #Header
+    html.Div(className="study-browser-banner row",
+             children=[html.H2(className="h2-title", children="Status de la señal"),
+                       html.Div(className="div-logo",
+                                children=html.Img(className="logo", src=app.get_asset_url("Ternium.png"))),
+                       html.H2(className="h2-title-mobile", children="Status de la señal")
+                       ]
+             ),
+    
+    #Body
     html.Div([
 
         html.Div([
             
-            #Filtros
+            #DropdownMenu
+            html.Br(),
             html.P("País : ", className="control_label"),
-            dcc.RadioItems(
-                id="input_country",
-                options=[
-                    {"label": "ARG ", "value": "Argentina"},
-                    {"label": "BRA ", "value": "Brasil"},
-                    {"label": "MEX ", "value": "México"}],
-                value="Argentina",
-                labelStyle={"display": "inline-block"},
-                            className="dcc_control",
-                ),
-            html.Br(),
+                dcc.RadioItems(
+                    id="input_country",
+                    options=[
+                        {"label": "ARG ", "value": "Argentina"},
+                        {"label": "BRA ", "value": "Brasil"},
+                        {"label": "MEX ", "value": "México"}],
+                    value="Argentina",
+                    labelStyle={"display": "inline-block"},
+                                className="dcc_control",
+                                ),
+                html.Br(),
+                
             html.P("Listado de señales :", className="control_label"),
-            dcc.Dropdown(df_dash["signal"].unique(),
-                         id ='list_signal',
-                         multi=True),
+                dcc.Dropdown(df_dash["signal"].unique(),
+                             id ='list_signal',
+                             multi=True),
+            
+                html.Br(),
+            
+            html.P("Rango de fechas :", className="control_label"),
+                dcc.DatePickerRange(
+                    id='day',
+                    min_date_allowed = datetime.today() + timedelta(days =-1),
+                    max_date_allowed = datetime.today()
+                    ),
+                
             html.Br(),
-            dcc.DatePickerRange(
-                id='day',
-                min_date_allowed = datetime.today() + timedelta(days =-5),
-                max_date_allowed = datetime.today(),
-                initial_visible_month = datetime.today() + timedelta(days =-5),
-                end_date = datetime.today()
-                ),
             html.Br(),
-            html.Br(),
-            #Gráficas 
+            
+            #Boxes 
             html.Div([
                 dcc.Graph(id = 'table_1')
                 ],
@@ -104,15 +121,18 @@ app.layout = html.Div([
     style={"display": "flex", "flex-direction": "column"}
     )
 
-# Helper functions
+###################
+# Helper functions#
+###################
 def filter_dataframe(df_dash, input_country, list_signal, start_date, end_date):
     dff = df_dash[ (df_dash["country"].isin([input_country])) 
             & (df_dash.stack().str.contains('|'.join(list_signal)).any(level=0))
             & (df_dash["day"] >= start_date) & (df_dash["day"] <= end_date)]
     return dff
 
-# Create callbacks
-
+###################
+# Create callbacks#
+###################
 @app.callback(
     Output("table_1", "figure"),
     [

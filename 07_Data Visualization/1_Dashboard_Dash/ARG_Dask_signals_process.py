@@ -137,7 +137,7 @@ df_dash = df_ideal.loc[:,["country",'day', 'key_group','signal','pct_val_no_zero
 #No mandar con index
 #Formato redondeado de números a un digito
 df_ideal.to_csv("data/df_ideal.csv", index=False)
-df_ideal.to_csv("data/df_dash.csv", index=False)
+df_dash.to_csv("data/df_dash.csv", index=False)
 comparative_sample.to_csv("data/df_comparative_sample.csv", index=False)
 
 #Cruze y outliers
