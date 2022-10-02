@@ -22,8 +22,6 @@ day_files = '20220902'
 #ddf_may.to_csv("ddf_may.csv")
 
 #Transformations
-#ddf_signal = transformations.format_groups(ddf_signal).compute()
-
 ddf_signal = dd.read_csv("data/ddf_signal.csv").compute()
 ddf_signal['Time'] = pd.to_datetime(ddf_signal['Time'])
 
@@ -134,19 +132,7 @@ df_ideal = df_ideal.loc[:,["country", "day", "signal","Grado_may22","Velocidad_m
 
 df_dash = df_ideal.loc[:,["country",'day', 'key_group','signal','pct_val_no_zeros', 'within_range', 'Cantidad_CU_may22','indicator']]
 
-#No mandar con index
-#Formato redondeado de números a un digito
 df_ideal.to_csv("data/df_ideal.csv", index=False)
 df_dash.to_csv("data/df_dash.csv", index=False)
 comparative_sample.to_csv("data/df_comparative_sample.csv", index=False)
 
-#Cruze y outliers
-
-#fig = px.scatter(
-#    ddf_complete_tmp,
-#    x = "Time",
-#    y = "value", 
-#    color = "groupings",
-#    title = "Detalle de grupos por señal grado acero | velocidad linea | ancho planchon")
-
-#fig.show()

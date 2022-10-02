@@ -82,8 +82,10 @@ app.layout = html.Div([
             html.P("Rango de fechas :", className="control_label"),
                 dcc.DatePickerRange(
                     id='day',
-                    min_date_allowed = datetime.today() + timedelta(days =-1),
-                    max_date_allowed = datetime.today()
+                    min_date_allowed = datetime.today() + timedelta(days =-30),
+                    max_date_allowed = datetime.today(),
+                    start_date_placeholder_text="Start Period",
+                    end_date_placeholder_text="End Period"
                     ),
                 
             html.Br(),
@@ -163,6 +165,31 @@ def table_details(input_country, list_signal):
     fig_1 = go.Figure(data = [trace_0], layout = layout_0)
 
     return fig_1
+
+#List extract days
+def date_range_to_be_extracted(day_gregorate = datetime.today()):
+    
+    day_gregorate_start = datetime.today() + timedelta(days =-5)
+    day_gregorate_end = datetime.today()
+    
+    yr = day_gregorate_start.year
+    mnth = day_gregorate_start.month
+    start_day = day_gregorate_start.day
+    end_day = day_gregorate_end.day
+    
+    from_time = '{0}-{1}-{2}'.format(yr, mnth, start_day)
+    end_time  = '{0}-{1}-{2}'.format(yr, mnth, end_day)
+    
+    fecha = lambda x: int(x.strftime("%Y-%m-%d").replace("-",""))
+    
+    init_flt = datetime.strptime(from_time, "%Y-%m-%d")
+    end_flt = datetime.strptime(end_time, "%Y-%m-%d")
+    
+    date_range = [fecha(x) for x in pd.date_range(start=init_flt,end=end_flt).to_pydatetime().tolist()]
+    
+    return date_range
+
+date_range_to_be_extracted()
 
 # Main graph -> graph bar
 @app.callback(
