@@ -13,6 +13,8 @@ import dash_html_components as html
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 
+import dash_html_components as html
+
 #Data Processing
 import pandas as pd
 from datetime import date
@@ -20,19 +22,19 @@ import datetime
 from datetime import datetime, timedelta
 
 #DataBases Master
-df_comparative_sample = pd.read_csv("data/df_comparative_sample.csv")
+df_comparative_sample = pd.read_csv("data/ddf_dash/df_comparative_sample.csv")
 
-df_dash = pd.read_csv("data/df_dash.csv")
+df_dash = pd.read_csv("data/ddf_dash/df_dash.csv")
 df_dash['day'] = pd.to_datetime(df_dash['day']).dt.floor("D")
 
-df_ideal = pd.read_csv("data/df_ideal.csv")
+df_ideal = pd.read_csv("data/ddf_dash/df_ideal.csv")
 
 #Filtros ddebbug
 input_country = 'Argentina'
 list_signal = ["hsa12_loopout_esrsprtrdactpst_C1075052644"]
 
-start_date = '2022-09-26'
-end_date = '2022-09-26'
+#start_date = '2022-09-26'
+#end_date = '2022-09-26'
 
 app = dash.Dash( __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}] )
 app.title = "Monitorea Predictivo"
@@ -42,82 +44,84 @@ server = app.server
 # Create app layout#
 ####################
 app.layout = html.Div([
-    
     #Header
     html.Div(className="study-browser-banner row",
              children=[html.H2(className="h2-title", children="Status de la señal"),
                        html.Div(className="div-logo",
                                 children=html.Img(className="logo", src=app.get_asset_url("Ternium.png"))),
                        html.H2(className="h2-title-mobile", children="Status de la señal")
-                       ]
-             ),
-    
-    #Body
+                       ]),
+    #DropdownMenu
     html.Div([
-
-        html.Div([
-            
-            #DropdownMenu
-            html.Br(),
-            html.P("País : ", className="control_label"),
-                dcc.RadioItems(
-                    id="input_country",
-                    options=[
-                        {"label": "ARG ", "value": "Argentina"},
-                        {"label": "BRA ", "value": "Brasil"},
-                        {"label": "MEX ", "value": "México"}],
-                    value="Argentina",
-                    labelStyle={"display": "inline-block"},
-                                className="dcc_control",
-                                ),
-                html.Br(),
-                
-            html.P("Listado de señales :", className="control_label"),
-                dcc.Dropdown(df_dash["signal"].unique(),
-                             id ='list_signal',
-                             multi=True),
-            
-                html.Br(),
-            
-            html.P("Rango de fechas :", className="control_label"),
-                dcc.DatePickerRange(
-                    id='day',
-                    min_date_allowed = datetime.today() + timedelta(days =-30),
-                    max_date_allowed = datetime.today(),
-                    start_date_placeholder_text="Start Period",
-                    end_date_placeholder_text="End Period"
-                    ),
-                
-            html.Br(),
-            html.Br(),
-            
-            #Boxes 
-            html.Div([
-                dcc.Graph(id = 'table_1')
-                ],
-                id="info-container",
-                className="row container-display"
-                    ),
-            html.Br(),
-            #Views : graphs and tables.
-            html.Div([
-                
-                dcc.Graph(id = 'fig'),
-                html.Br(),
-                dcc.Graph(id = 'fig_1'),
-                html.P("Detalle de la información :", className="control_label"),
-                html.Button("Download CSV", id="btn_csv"),
-                dcc.Download(id="download-dataframe-csv")
-
-                ],
-                id="countGraphContainer",
-                className="pretty_container")],
-            id="right-column",
-            className="eight columns")
+        html.Br(),
+        html.P("País : ", className="control_label"),
+        dcc.RadioItems(
+            id="input_country",
+            options=[{"label": "ARG ", "value": "Argentina"},
+                     {"label": "BRA ", "value": "Brasil"},
+                     {"label": "MEX ", "value": "México"}],
+            value="Argentina",
+            labelStyle={"display": "inline-block"},
+            className="dcc_control"),
+        html.Br(),
+        html.P("Listado de señales :", className="control_label"),
+        dcc.Dropdown(df_dash["signal"].unique(),
+                     id ='list_signal',
+                     multi=True),
+        html.Br(),
+        html.P("Rango de fechas :", className="control_label"),
+        dcc.DatePickerRange(
+            id='day',
+            min_date_allowed = datetime.today() + timedelta(days =-30),
+            max_date_allowed = datetime.today(),
+            start_date_placeholder_text="Start Period",
+            end_date_placeholder_text="End Period") 
+        ]),
+    html.Br(),
+    
+    #Text
+    html.Div([
+        html.Div(
+            [html.H6(id="n_days"), html.P("N° de días")],
+            id="days",
+            className="mini_container"),
+        html.Div(
+            [html.H6(id="n_signals"), html.P("N° Señales")],
+            id="signals",
+            className="mini_container"),
+        html.Div(
+            [html.H6(id="groups_may"), html.P("Grupos muestra Mayo 2022")],
+            id="group_may",
+            className="mini_container"),
+        html.Div(
+            [html.H6(id="groups_day"), html.P("Grupos en días seleccionados")],
+            id="group_day",
+            className="mini_container"),
+        html.Div(
+            [html.H6(id="groups_found"), html.P("Grupos comparados")],
+            id="group_found",
+            className="mini_container"),
+        html.Div(
+            [html.H6(id="groups_no_found"), html.P("Grupos no comparados")],
+            id="group_no_found",
+            className="mini_container")
         ],
-        className="row flex-display"
+        id="info-container",
+        className="row container-display"
         ),
-        
+    
+    #tabla por días señal | día | estable | media | revisión
+    html.Div([
+        dcc.Graph(id = 'table_1'),
+        html.Br(),
+        dcc.Graph(id = 'fig'),
+        html.Br(),
+        dcc.Graph(id = 'fig_1'),
+        html.P("Detalle de la información :", className="control_label"),
+        html.Button("Download CSV", id="btn_csv"),
+        dcc.Download(id="download-dataframe-csv")],
+        id="countGraphContainer",
+        className="pretty_container")
     ],
     id="mainContainer",
     style={"display": "flex", "flex-direction": "column"}
@@ -135,6 +139,9 @@ def filter_dataframe(df_dash, input_country, list_signal, start_date, end_date):
 ###################
 # Create callbacks#
 ###################
+
+
+
 @app.callback(
     Output("table_1", "figure"),
     [
@@ -165,31 +172,6 @@ def table_details(input_country, list_signal):
     fig_1 = go.Figure(data = [trace_0], layout = layout_0)
 
     return fig_1
-
-#List extract days
-def date_range_to_be_extracted(day_gregorate = datetime.today()):
-    
-    day_gregorate_start = datetime.today() + timedelta(days =-5)
-    day_gregorate_end = datetime.today()
-    
-    yr = day_gregorate_start.year
-    mnth = day_gregorate_start.month
-    start_day = day_gregorate_start.day
-    end_day = day_gregorate_end.day
-    
-    from_time = '{0}-{1}-{2}'.format(yr, mnth, start_day)
-    end_time  = '{0}-{1}-{2}'.format(yr, mnth, end_day)
-    
-    fecha = lambda x: int(x.strftime("%Y-%m-%d").replace("-",""))
-    
-    init_flt = datetime.strptime(from_time, "%Y-%m-%d")
-    end_flt = datetime.strptime(end_time, "%Y-%m-%d")
-    
-    date_range = [fecha(x) for x in pd.date_range(start=init_flt,end=end_flt).to_pydatetime().tolist()]
-    
-    return date_range
-
-date_range_to_be_extracted()
 
 # Main graph -> graph bar
 @app.callback(

@@ -10,22 +10,27 @@ import os
 #utils
 from utils import values 
 from utils import transformations
+from utils import extract_month_azure
 
+#Datos comparativos
 if "ddf_may.csv" in os.listdir("data/ddf_dash"):
-    
     ddf_may = dd.read_csv("data/ddf_dash/ddf_may.csv").compute()
-
 else:
-    
     ddf_may = dd.read_csv('abfs://mtto-predictivo-input-arg@prodltransient.blob.core.windows.net/202205_ccd2_iba_ideal.csv',
                            storage_options = {"account_name": values.config_values['May22']['account_name'],
                                              "sas_token": values.config_values['May22']['sas_token']},
                            blocksize = None).compute()
-
     ddf_may.to_csv("data/ddf_dash/ddf_may.csv")
 
-#Transformations
-ddf_signal = dd.read_csv("data/ddf_signal/*.csv").compute()
+#Datos señales
+status_extraction = extract_month_azure.azure_data_extraction()
+
+if status_extraction == 'No se descargaron archivos de azure':
+   ddf_signal = dd.read_csv("data/ddf_signal/*.csv").compute()
+else:
+   extract_month_azure.azure_data_extraction()
+   ddf_signal = dd.read_csv("data/ddf_signal/*.csv").compute()
+
 ddf_signal['Time'] = pd.to_datetime(ddf_signal['Time'])
 
 #--- Status_completitud (Para todas la señales)
@@ -81,8 +86,8 @@ comparative_sample = {"n_signals_may22"     : len(ddf_may["signal_may22"].unique
 comparative_sample = pd.DataFrame(list(comparative_sample.items()),
                                   columns = ['feature','number'])
 
-ddf_may_tmp = ddf_may[ddf_may["signal_may22"].str.contains("hsa12_loopout_dslsprtrdactpst_C1075052646")]
-ddf_complete_tmp = ddf_complete[ddf_complete["variable"] == 'hsa12_loopout_dslsprtrdactpst_C1075052646']
+#ddf_may_tmp = ddf_may[ddf_may["signal_may22"].str.contains("hsa12_loopout_dslsprtrdactpst_C1075052646")]
+#ddf_complete_tmp = ddf_complete[ddf_complete["variable"] == 'hsa12_loopout_dslsprtrdactpst_C1075052646']
 
 ddf_complete = ddf_complete.merge(ddf_may,
                                   left_on ='key_group',
@@ -136,8 +141,8 @@ df_ideal = df_ideal.loc[:,["country", "day", "signal","Grado_may22","Velocidad_m
 
 df_dash = df_ideal.loc[:,["country",'day', 'key_group','signal','pct_val_no_zeros', 'within_range', 'Cantidad_CU_may22','indicator']]
 
-df_ideal.to_csv("data/df_ideal.csv", index=False)
-df_dash.to_csv("data/df_dash.csv", index=False)
-comparative_sample.to_csv("data/df_comparative_sample.csv", index=False)
+df_ideal.to_csv("data/ddf_dash/df_ideal.csv", index=False)
+df_dash.to_csv("data/ddf_dash/df_dash.csv", index=False)
+comparative_sample.to_csv("data/ddf_dash/df_comparative_sample.csv", index=False)
 
 #
