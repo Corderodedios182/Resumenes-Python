@@ -8,8 +8,6 @@ import pandas as pd
 import numpy as np
 import dask.dataframe as dd
 
-day_gregorate = '2022-21-02'
-
 @dask.delayed
 def format_groups(df):
     """Formato a las señales extraidas.
@@ -62,10 +60,13 @@ def format_groups(df):
     return df
 
 @dask.delayed
-def seconds_day(day_gregorate = day_gregorate, periods = 86400*6):
+def seconds_day(min_day_gregorate, max_day_gregorate):
     """Dataframe con los 84,000 segundos del día"""
-    df_time = pd.DataFrame(dict(Time = pd.Series(pd.date_range(f'{day_gregorate} 00:00:00',
-                                                               periods = periods, freq = 's'))))
+    
+    df_time = pd.DataFrame(dict(Time = pd.Series(pd.date_range(start = min_day_gregorate,
+                                                               end = max_day_gregorate,
+                                                               freq = 's'))))
+
     df_time["second_day"] = df_time.index
     df_time = dd.from_pandas(df_time, npartitions = 1)
     
@@ -73,8 +74,7 @@ def seconds_day(day_gregorate = day_gregorate, periods = 86400*6):
 
 @dask.delayed
 def missing_groups(ddf_complete,
-                   value= 'zero',
-                   day_gregorate = day_gregorate):
+                   value= 'zero'):
     """Dataframe con los diferentes porcentajes de valores faltantes en señales"""
 
     def percentage_zero(ddf_complete, value = value):
@@ -120,13 +120,19 @@ def group_completeness(ddf_time,
     ddf_null    = missing_groups(ddf_complete, value = 'null').compute()
 
     ddf_missing_groups = pd.merge(ddf_no_zero, ddf_zero, on = 'key', how = 'outer')
+    ddf_missing_groups["day_x"] = ddf_missing_groups["day_x"].fillna(ddf_missing_groups["day_y"])
+    ddf_missing_groups["signals_x"] = ddf_missing_groups["signals_x"].fillna(ddf_missing_groups["signals_y"])
+    
     ddf_missing_groups = pd.merge(ddf_missing_groups, ddf_null, on = "key", how = 'outer')
+    ddf_missing_groups["day_x"] = ddf_missing_groups["day_x"].fillna(ddf_missing_groups["day"])
+    ddf_missing_groups["signals_x"] = ddf_missing_groups["signals_x"].fillna(ddf_missing_groups["signals"])
+    
     ddf_missing_groups = ddf_missing_groups.fillna(0)
     ddf_missing_groups["sum_validation_completeness"] =  ddf_missing_groups["pct_val_equal_zero"] + ddf_missing_groups["pct_val_no_zeros"] + ddf_missing_groups["pct_val_null"]
-    ddf_missing_groups = ddf_missing_groups.loc[:,['day','signals','pct_val_no_zeros','pct_val_equal_zero','pct_val_null', 'sum_validation_completeness']]
+    ddf_missing_groups = ddf_missing_groups.loc[:,['day_x','signals_x','pct_val_no_zeros','pct_val_equal_zero','pct_val_null', 'sum_validation_completeness']]
     ddf_missing_groups = ddf_missing_groups.sort_values("pct_val_equal_zero", ascending = False)
     ddf_missing_groups.columns = ["day","signal",'pct_val_no_zeros','pct_val_equal_zero','pct_val_null', 'sum_validation_completeness']
-    ddf_missing_groups = ddf_missing_groups[ddf_missing_groups["day"] != 0]
+    ddf_missing_groups = ddf_missing_groups.sort_values(["signal","day"], ascending = True)
 
     return ddf_missing_groups
 

@@ -5,33 +5,37 @@ Procesos y dataframes outputs de análisis señales.
 #Data Processing
 import dask.dataframe as dd
 import pandas as pd
+import os
 
 #utils
 from utils import values 
 from utils import transformations
 
-#Load data Azure
-day_gregorate = '2022-09-21'
-day_files = '20220902'
+if "ddf_may.csv" in os.listdir("data/ddf_dash"):
+    
+    ddf_may = dd.read_csv("data/ddf_dash/ddf_may.csv").compute()
 
-#ddf_may = dd.read_csv('abfs://mtto-predictivo-input-arg@prodltransient.blob.core.windows.net/202205_ccd2_iba_ideal.csv',
-#                       storage_options = {"account_name": values.config_values['May22']['account_name'],
-#                                         "sas_token": values.config_values['May22']['sas_token']},
-#                       blocksize = None).compute()
+else:
+    
+    ddf_may = dd.read_csv('abfs://mtto-predictivo-input-arg@prodltransient.blob.core.windows.net/202205_ccd2_iba_ideal.csv',
+                           storage_options = {"account_name": values.config_values['May22']['account_name'],
+                                             "sas_token": values.config_values['May22']['sas_token']},
+                           blocksize = None).compute()
 
-#ddf_may.to_csv("ddf_may.csv")
+    ddf_may.to_csv("data/ddf_dash/ddf_may.csv")
 
 #Transformations
-ddf_signal = dd.read_csv("data/ddf_signal.csv").compute()
+ddf_signal = dd.read_csv("data/ddf_signal/*.csv").compute()
 ddf_signal['Time'] = pd.to_datetime(ddf_signal['Time'])
 
-ddf_may = dd.read_csv("data/ddf_may.csv").compute()
+#--- Status_completitud (Para todas la señales)
+ddf_time = transformations.seconds_day(min(ddf_signal['Time'].dt.floor("D")),
+                                       max(ddf_signal['Time'].dt.floor("D"))).compute()
 
-#Status_completitud (Para todas la señales)
-ddf_time = transformations.seconds_day(day_gregorate).compute()
-ddf_missing_groups = transformations.group_completeness(ddf_time, ddf_signal)
+ddf_missing_groups = transformations.group_completeness(ddf_time,
+                                                        ddf_signal)
 
-#Muestra ideal Mayo 2022
+#--- Muestra ideal Mayo 2022
 ddf_may["Grado"] = ddf_may["Grado"].astype(int)
 ddf_may["Velocidad"] = ddf_may["Velocidad"].apply(lambda x: round(x, 1))
 
@@ -136,3 +140,4 @@ df_ideal.to_csv("data/df_ideal.csv", index=False)
 df_dash.to_csv("data/df_dash.csv", index=False)
 comparative_sample.to_csv("data/df_comparative_sample.csv", index=False)
 
+#
