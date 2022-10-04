@@ -26,6 +26,14 @@ from datetime import datetime, timedelta
 
 #DataBases Master
 df_comparative_sample = pd.read_csv("data/ddf_dash/df_comparative_sample.csv")
+ddf_may = pd.read_csv("data/ddf_dash/ddf_may.csv")
+ddf_may["Grado"] = ddf_may["Grado"].astype(int)
+ddf_may["Velocidad"] = ddf_may["Velocidad"].apply(lambda x: round(x, 1))
+
+ddf_may["key_group"] = ddf_may["signal"].astype(str) + " | " + \
+                       ddf_may["Grado"].astype(str) + " | " + \
+                       ddf_may["Velocidad"].astype(str) + " | " + \
+                       ddf_may["Ancho"].astype(str)
 
 df_dash = pd.read_csv("data/ddf_dash/df_dash.csv")
 df_dash['day'] = pd.to_datetime(df_dash['day']).dt.floor("D")
@@ -49,10 +57,10 @@ server = app.server
 app.layout = html.Div([
     #Header
     html.Div(className="study-browser-banner row",
-             children=[html.H2(className="h2-title", children="Status de la señal"),
+             children=[html.H2(className="h2-title", children="Alertas de Señales Desviadas "),
                        html.Div(className="div-logo",
                                 children=html.Img(className="logo", src=app.get_asset_url("Ternium.png"))),
-                       html.H2(className="h2-title-mobile", children="Status de la señal")
+                       html.H2(className="h2-title-mobile", children="Alertas de Señales Desviadas ")
                        ]),
     #DropdownMenu
     html.Div([
@@ -143,8 +151,97 @@ def filter_dataframe(df_dash, input_country, list_signal, start_date, end_date):
 # Create callbacks#
 ###################
 
+# Selectors -> n_days
+@app.callback(
+    Output("n_days", "children"),
+    [
+     Input('input_country', 'value'),
+     Input("list_signal", "value"),
+     Input("day", "start_date"),
+     Input("day", "end_date")
+     ])
+def update_n_days(input_country, list_signal, start_date, end_date):
 
+    dff = filter_dataframe(df_dash, input_country, list_signal, start_date, end_date)
+    return len(dff["day"].unique())
 
+# Selectors -> n_signals
+@app.callback(
+    Output("n_signals", "children"),
+    [
+     Input('input_country', 'value'),
+     Input("list_signal", "value"),
+     Input("day", "start_date"),
+     Input("day", "end_date")
+     ])
+def update_n_signals(input_country, list_signal, start_date, end_date):
+
+    dff = filter_dataframe(df_dash, input_country, list_signal, start_date, end_date)
+    return len(dff["signal"].unique())
+
+# Selectors -> groups_may
+@app.callback(
+    Output("groups_may", "children"),
+    [
+     Input("list_signal", "value")
+     ])
+def update_groups_may(list_signal):
+
+    return len(ddf_may[ddf_may.stack().str.contains('|'.join(list_signal)).any(level=0)]["key_group"].unique())
+
+# Selectors -> groups_day
+@app.callback(
+    Output("groups_day", "children"),
+    [
+     Input('input_country', 'value'),
+     Input("list_signal", "value"),
+     Input("day", "start_date"),
+     Input("day", "end_date")
+     ])
+def update_groups_day(input_country, list_signal, start_date, end_date):
+
+    dff = filter_dataframe(df_dash, input_country, list_signal, start_date, end_date)
+    return len(dff["key_group"].unique())
+
+# Selectors -> groups_found
+@app.callback(
+    Output("groups_found", "children"),
+    [
+     Input('input_country', 'value'),
+     Input("list_signal", "value"),
+     Input("day", "start_date"),
+     Input("day", "end_date")
+     ])
+def update_groups_found(input_country, list_signal, start_date, end_date):
+
+    dff = filter_dataframe(df_dash, input_country, list_signal, start_date, end_date)
+    
+    keys_group_may22     = ddf_may[ddf_may.stack().str.contains('|'.join(list_signal)).any(level=0)]["key_group"].unique()
+    keys_group_analyisis = dff["key_group"].unique()
+    found = [item in list(keys_group_analyisis) for item in list(keys_group_may22)]
+    
+    return sum(found)
+
+# Selectors -> groups_no_found
+@app.callback(
+    Output("groups_no_found", "children"),
+    [
+     Input('input_country', 'value'),
+     Input("list_signal", "value"),
+     Input("day", "start_date"),
+     Input("day", "end_date")
+     ])
+def update_groups_no_found(input_country, list_signal, start_date, end_date):
+
+    dff = filter_dataframe(df_dash, input_country, list_signal, start_date, end_date)
+    
+    keys_group_may22     = ddf_may[ddf_may.stack().str.contains('|'.join(list_signal)).any(level=0)]["key_group"].unique()
+    keys_group_analyisis = dff["key_group"].unique()
+    found = [item in list(keys_group_analyisis) for item in list(keys_group_may22)]
+    
+    return keys_group_analyisis.shape[0] - sum(found)
+
+# Main table -> table_1
 @app.callback(
     Output("table_1", "figure"),
     [
