@@ -15,6 +15,9 @@ import dash_core_components as dcc
 
 import dash_html_components as html
 
+#import plotly.io as pio
+#pio.renderers.default='browser'
+
 #Data Processing
 import pandas as pd
 from datetime import date
@@ -31,10 +34,10 @@ df_ideal = pd.read_csv("data/ddf_dash/df_ideal.csv")
 
 #Filtros ddebbug
 input_country = 'Argentina'
-list_signal = ["hsa12_loopout_esrsprtrdactpst_C1075052644"]
+list_signal = ["hsa12_group_hsarefgaubs_C1075052604", "hsa12_group_hsaactgauts_C1075052605","hsa12_loopout_dslsprtrdactpst_C1075052646", "hsa12_loopout_dslsactfrc_C1075052640"]
 
-#start_date = '2022-09-26'
-#end_date = '2022-09-26'
+start_date = '2022-10-01'
+end_date = '2022-10-02'
 
 app = dash.Dash( __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}] )
 app.title = "Monitorea Predictivo"
@@ -146,12 +149,16 @@ def filter_dataframe(df_dash, input_country, list_signal, start_date, end_date):
     Output("table_1", "figure"),
     [
      Input('input_country', 'value'),
-     Input("list_signal", "value")
+     Input("list_signal", "value"),
+     Input("day", "start_date"),
+     Input("day", "end_date")
     ])
-def table_details(input_country, list_signal):
+def table_details(input_country, list_signal, start_date, end_date):
     
-    df_dash["key_group"] = df_dash["day"].astype(str) + df_dash["signal"]
-    dff = df_dash.groupby(["key_group","day","signal","indicator"]).agg({"country":'count'})
+    dff = filter_dataframe(df_dash, input_country, list_signal, start_date, end_date)
+    
+    dff["key_group"] = dff["day"].astype(str) + dff["signal"]
+    dff = dff.groupby(["key_group","day","signal","indicator"]).agg({"country":'count'})
     dff = dff.groupby(level = 0).apply(lambda x: 100 * x / float(x.sum())).reset_index()#.sort_values("key_group", ascending= False)
     dff = dff.sort_values('country', ascending=False).groupby(["day","signal"], as_index=False).first().reset_index()
     dff = dff.loc[:,["day","signal","indicator","country"]]
@@ -162,6 +169,15 @@ def table_details(input_country, list_signal):
     ddf_general = ddf_general.pivot(index="dia", columns="status_señal", values="numero_señales").reset_index().fillna(0)
     ddf_general["dia"] = pd.to_datetime(ddf_general['dia']).dt.floor("D")
     
+    if 'revision' not in ddf_general.columns:
+        ddf_general["revision"] = 0
+    
+    if 'estable' not in ddf_general.columns:
+        ddf_general["estable"] = 0
+    
+    if 'media' not in ddf_general.columns:
+        ddf_general["media"] = 0
+    
     trace_0 = go.Table(
         header=dict(values=list(ddf_general.columns),
                     fill_color='paleturquoise',
@@ -169,7 +185,8 @@ def table_details(input_country, list_signal):
 
         cells=dict(values=[ddf_general.dia,
                            ddf_general.estable,
-                           ddf_general.revision
+                           ddf_general.revision,
+                           ddf_general.media
                            ],
                    fill_color='lavender',
                    align='center'))
