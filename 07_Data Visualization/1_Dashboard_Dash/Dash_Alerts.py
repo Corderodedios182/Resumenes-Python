@@ -149,16 +149,28 @@ def filter_dataframe(df_dash, input_country, list_signal, start_date, end_date):
      Input("list_signal", "value")
     ])
 def table_details(input_country, list_signal):
-
-    dff = df_comparative_sample
-
+    
+    df_dash["key_group"] = df_dash["day"].astype(str) + df_dash["signal"]
+    dff = df_dash.groupby(["key_group","day","signal","indicator"]).agg({"country":'count'})
+    dff = dff.groupby(level = 0).apply(lambda x: 100 * x / float(x.sum())).reset_index()#.sort_values("key_group", ascending= False)
+    dff = dff.sort_values('country', ascending=False).groupby(["day","signal"], as_index=False).first().reset_index()
+    dff = dff.loc[:,["day","signal","indicator","country"]]
+    dff.columns = ["dia","señal","status_señal","porcentaje_status"]
+    
+    ddf_general = dff.groupby(["dia","status_señal"]).agg({"señal":"count"}).reset_index()
+    ddf_general.columns = ["dia","status_señal","numero_señales"]
+    ddf_general = ddf_general.pivot(index="dia", columns="status_señal", values="numero_señales").reset_index().fillna(0)
+    ddf_general["dia"] = pd.to_datetime(ddf_general['dia']).dt.floor("D")
+    
     trace_0 = go.Table(
-        header=dict(values=list(dff.columns),
+        header=dict(values=list(ddf_general.columns),
                     fill_color='paleturquoise',
                     align='center'),
 
-        cells=dict(values=[dff.feature,
-                           dff.number],
+        cells=dict(values=[ddf_general.dia,
+                           ddf_general.estable,
+                           ddf_general.revision
+                           ],
                    fill_color='lavender',
                    align='center'))
 
