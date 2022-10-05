@@ -101,7 +101,7 @@ app.layout = html.Div([
             id="signals",
             className="mini_container"),
         html.Div(
-            [html.H6(id="groups_may"), html.P("Grupos muestra Mayo 2022")],
+            [html.H6(id="groups_may"), html.P("Grupos muestra Ideal")],
             id="group_may",
             className="mini_container"),
         html.Div(
