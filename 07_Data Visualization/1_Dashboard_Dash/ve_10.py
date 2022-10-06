@@ -182,6 +182,7 @@ app.layout = html.Div(
                                             dcc.Tabs(id="tipo_grafico", children=[
                                             dcc.Tab(label='Histograma', value='histograma'),
                                             dcc.Tab(label='Señal en el tiempo', value='señal_tiempo'),
+                                            dcc.Tab(label='Señal en el tiempo por grupos', value='señal_tiempo_grupos'),
                                             ]
                                         ),
                                     ],
@@ -314,12 +315,23 @@ def update_grafico(señal, tipo_grafico, fecha):
             bar_graph=px.line(data_frame = data, x = [d for d in data['Time']], y = señal, title=señal) 
                 
             return bar_graph
+        
+    elif tipo_grafico == 'señal_tiempo_grupos':
+        
+            bar_graph = px.scatter(
+                data[data["variable"] == señal],
+                x="Time",
+                y="value", 
+                color="groupings",
+                width=1600,
+                height=700,
+                title=r"Grupos generados por señal : {}".format(señal))
+
+            return bar_graph
     
     else:
     
         return {}
-
-
 
 @app.callback(
     [Output("valores_nulos", "value"),
