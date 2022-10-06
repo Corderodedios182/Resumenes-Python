@@ -40,114 +40,22 @@ if os.path.exists('data.csv') == True:
 
 group_colors = {"control": "light blue", "reference": "red"}
 
-#################
-#Valores Filtros#
-#################
-signals = ["Time",
-        "s4_an2l_ramactwidthboc_C1611", #ancho plataforma
-        "s4_hmo_pmac_fmplc_m5043_an2l_hmo_castspeed_C0470", #velodicdad línea
-        "grade_number_C1074659440", #grado_acero
-        "s4_drv_net_a_ea_seg12_torque_reff_C1074856029", #señales de línea 4 y segmento 12
-        "s4_drv_net_a_ea_seg12_torque_ref_C1074856020",
-        "hsa12_loopout_eslsprtrdactpst_C1075052642",
-        'hsa12_group_hsarefgauts_C1075052603']
+#DataBases Master
 
-#Transformaciones#
-##################
-@dask.delayed
-def format_groups(df):
-    """Formato a las señales extraidas.
-    Agrupa por segundo para disminuir los datos de milisegundos a segundos.
-    Crea etiquetas y grupos de ancho, velocidad y grado de acero.
-    """
-    df['Time'] = df["Time"].dt.year.astype(str)  +"-" + \
-                df["Time"].dt.month.astype(str) +"-" + \
-                df["Time"].dt.day.astype(str)   +" " + \
-                df["Time"].dt.hour.astype(str)  +":" + \
-                df["Time"].dt.minute.astype(str)+":" + \
-                df["Time"].dt.second.astype(str)
-    df['Time'] = pd.to_datetime(df['Time'])
-    df = df.groupby(["Time"]).mean().reset_index()
-    return df
-
+ddf_signal = dd.read_csv("data/ddf_signal/*.csv").compute()
+ddf_signal['Time'] = pd.to_datetime(ddf_signal['Time'])
 
 def get_data(señal, dias, dia):
-
-    #Valores Filtros#
-    #################
-    signals = ["Time",
-            señal]
     
-    #Valores Azure#
-    ###############
-    config_values = {'Signals': {
-                        'account_name': 'prodllanding',
-                        'sas_token': 'sp=rl&st=2022-04-05T18:14:27Z&se=2023-01-01T03:14:27Z&sv=2020-08-04&sr=c&sig=%2Fqe%2F4HbbTL6Tvx2oYNkF2tV7Qjjdj%2BsO2fDdldVinUU%3D', 
-                        'source': 'abfs://arg-landing-iba-sns-ccd2@prodllanding.blob.core.windows.net/date={date_}',
-                        'columns_file': signals,
-                        'columns_order': signals,
-                        'columns_to_date': ['Time'],
-                        'skip_rows': 0,
-                        'output_ddf': 'ddf'
-                        }
-                    }
-    ################
-
-    #CREACION DE day_files
     inicio = datetime.strptime(str(dia), '%Y-%m-%d') - timedelta(days= int(dias))    
     fin =    datetime.strptime(str(dia), '%Y-%m-%d') + timedelta(days= int(dias))
-    print(fin)
-
-    lista_dias = []
-    i = 0
-    while i < 10:
-
-        dias_seleccionados = inicio + timedelta(days= (i))
-        if dias_seleccionados == fin:
-                lista_dias.append(dias_seleccionados.strftime('%Y%m%d'))
-                break
-        else:
-            lista_dias.append(dias_seleccionados.strftime('%Y%m%d'))
-        
-        i=i+1
-
-    day_files=lista_dias
-    day_files
-    print(day_files)
     
-    #EXTRACCION DE DATOS
-    df_list=[]
-    for i in day_files:
-        print(i)
-        ddf_signal = dd.read_parquet(f'abfs://arg-landing-iba-sns-ccd2@prodllanding.blob.core.windows.net/date={i}',
-                        storage_options = {"account_name": config_values['Signals']['account_name'],
-                                            "sas_token": config_values['Signals']['sas_token']},
-                        blocksize = None,
-                        columns = config_values['Signals']['columns_file'])
-        df_list.append(format_groups(ddf_signal).compute())
-    
-    #CREACION DE PANDAS DATAFRAME
-    
-    df_final = pd.DataFrame()
-
-    lista_time = []
-    lista_datos = []
-    for i in range(len(df_list)):
-        lista_time = lista_time + df_list[i]['Time'].to_list()
-        lista_datos = lista_datos + df_list[i][signals[1]].to_list()
-        
-
-    df_final['Time'] = lista_time
-    df_final[señal] = lista_datos
-    
-    return df_final.drop_duplicates()
-
-
+    return ddf_signal[(ddf_signal["Time"] >= inicio) & (ddf_signal["Time"] <= fin)].loc[:,["Time","groupings",señal]]
 
 #===========================>Componenctes DCC
 HEADER = html.H5('Calidad de señal')
 
-SEÑAL = dcc.Dropdown([i for i in signals if i != 'Time'],id="señal")
+SEÑAL = dcc.Dropdown(ddf_signal.columns[1:-1],id="señal")
 
 TABS =  dcc.Tabs(id="tipo_grafico", value='tab-1-example-graph', children=[
         dcc.Tab(label='Histograma', value='histograma'),
@@ -234,7 +142,7 @@ app.layout = html.Div(
                                     className="padding-top-bot",
                                     children=[
                                         html.H6("SELECCIONA SEÑAL"),
-                                        dcc.Dropdown([i for i in signals if i != 'Time'],id="señal"),
+                                        dcc.Dropdown(ddf_signal.columns[1:-1],id="señal"),
                                     ],
                                 ),
                                 html.Div(
