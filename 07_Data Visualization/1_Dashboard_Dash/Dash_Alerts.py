@@ -123,7 +123,10 @@ app.layout = html.Div([
     
     #tabla por días señal | día | estable | media | revisión
     html.Div([
+        html.P("Clasificación de las señales :", className="control_label"),
         dcc.Graph(id = 'table_1'),
+        html.P("Señales a revisar :", className="control_label"),
+        dcc.Graph(id = 'table_2'),
         html.Br(),
         dcc.Graph(id = 'fig'),
         html.Br(),
@@ -240,6 +243,48 @@ def update_groups_no_found(input_country, list_signal, start_date, end_date):
     found = [item in list(keys_group_analyisis) for item in list(keys_group_may22)]
     
     return keys_group_analyisis.shape[0] - sum(found)
+
+# Main table -> table_2
+@app.callback(
+    Output("table_2", "figure"),
+    [
+     Input('input_country', 'value'),
+     Input("list_signal", "value"),
+     Input("day", "start_date"),
+     Input("day", "end_date")
+    ])
+def table_details_2(input_country, list_signal, start_date, end_date):
+    
+    dff = filter_dataframe(df_dash, input_country, list_signal, start_date, end_date)
+    
+    dff["key_group"] = dff["day"].astype(str) + dff["signal"]
+    dff = dff[dff["indicator"] == 'revision']
+    dff = dff.loc[:,["day","signal","indicator"]].drop_duplicates()
+    dff.columns = ["dia","señal_a_revisar","indicator"]
+    dff = dff.sort_values("señal_a_revisar")
+    
+    trace_0 = go.Table(
+        header=dict(values=list(dff.columns),
+                    fill_color='paleturquoise',
+                    align='center'),
+
+        cells=dict(values=[dff.dia,
+                           dff.señal_a_revisar,
+                           dff.indicator,
+                           ],
+                   fill_color='lavender',
+                   align='center'))
+
+    layout_0 = go.Layout(legend = {"x":.9,"y":.5},  margin=dict(l=20, r=20, t=20, b=20),
+                         width=1600,
+                         height = 200,
+                         showlegend = False,
+                         template = 'ggplot2',
+                         )
+
+    fig_1 = go.Figure(data = [trace_0], layout = layout_0)
+
+    return fig_1
 
 # Main table -> table_1
 @app.callback(
