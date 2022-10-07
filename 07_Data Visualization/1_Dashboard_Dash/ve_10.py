@@ -57,9 +57,6 @@ def get_data(señal, dias, dia):
 app.layout = html.Div(
     children=[
         
-        # Error Message
-        html.Div(id="error-message"),
-        
         # Top Banner
         html.Div(className="study-browser-banner row",
                  children=[html.H2(className="h2-title", children="CALIDAD DE SEÑAL"),

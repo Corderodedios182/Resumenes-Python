@@ -16,11 +16,13 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash import dash_table
 import dash_daq as daq
-#import plotly.io as pio
-#pio.renderers.default='browser'
+
+import plotly.io as pio
+pio.renderers.default='browser'
 
 #Data Processing
 import pandas as pd
+import numpy as np
 from datetime import date
 import datetime
 from datetime import datetime, timedelta
@@ -39,7 +41,7 @@ def get_data(signal, day, days = 1):
 
 #Filtros ddebbug
 input_country = 'Argentina'
-signal = "hsa12_group_hsarefgaubs_C1075052604"
+signal = "s4_drv_net_a_ea_seg12_torque_ref_C1074856020"
 
 day = '2022-10-02'
 
@@ -52,9 +54,6 @@ server = app.server
 #################a###
 app.layout = html.Div(
     children=[
-        
-        # Error Message
-        html.Div(id="error-message"),
         
         # Top Banner
         html.Div(className="study-browser-banner row",
@@ -69,48 +68,74 @@ app.layout = html.Div(
 
                      # User Controls
                      html.Div(
-                         children=[html.Div(children=[html.Div(children=[html.H6("SELECCIONA SEÑAL"),
+                         children=[html.Div(children=[html.Div(children=[html.H6("Selecciona una señal : "),
                                                                          dcc.Dropdown(ddf_signal.columns[1:-1],
                                                                                       id = "signal")]),
 
-                                                      html.Div(children=[html.H6("ABALIZAR UN DÍA"),
+                                                      html.Div(children=[html.H6("Selecciona un día : "),
                                                                          dcc.DatePickerSingle(
                                                                                      id ='day',
                                                                                      min_date_allowed = datetime.today() + timedelta(days =-30),
                                                                                      max_date_allowed = datetime.today() ) ]),
 
                                                       html.Div(children=[html.H6(" "),
-                                                                         html.Button('Buscar Señal', id='boton', n_clicks=0)]),
+                                                                         html.Button('Consultar datos de Señal : ', id='boton', n_clicks=0)]),
 
                                                       html.Div(children=[html.H6(' '),
                                                                          dcc.Loading(id="loading-1", type="default", children=html.Div(id="loading")),
                                                                          html.H6(' ')]),
                                                       
+                                                      html.Div([
+                                                          html.Div(
+                                                              [html.H6(id="count"), html.P("Registros")],
+                                                              className="mini_container"),
+                                                          html.Div(
+                                                              [html.H6(id="mean"), html.P("Promedio")],
+                                                              className="mini_container"),
+                                                          html.Div(
+                                                              [html.H6(id="std"), html.P("Desviación Estandar")],
+                                                              className="mini_container"),
+                                                          html.Div(
+                                                              [html.H6(id="min"), html.P("Mínimo")],
+                                                              className="mini_container"),
+                                                          html.Div(
+                                                              [html.H6(id="max"), html.P("Máximo")],
+                                                              className="mini_container"),
+                                                          html.Div(
+                                                              [html.H6(id="Q1"), html.P("Primer Quantile")],
+                                                              className="mini_container"),
+                                                          html.Div(
+                                                              [html.H6(id="Q3"), html.P("Tercer Quantile")],
+                                                              className="mini_container"),
+                                                          html.Div(
+                                                              [html.H6(id="vall_null"), html.P("Valores Nulos")],
+                                                              className="mini_container")
+                                                          ],
+                                                          id="info-container",
+                                                          className="row container-display"
+                                                          ),
+                                                      
                                                       html.Div(children=[html.Br(' '),
-                                                                         html.H6("SELECCIONA TIPO DE GRAFICO"),
+                                                                         html.H6("Selecciona un tipo de gráfico : "),
                                                                          dcc.Tabs(id="type_graph", children=[
                                                                          dcc.Tab(label='Histograma', value='histograma'),
                                                                          dcc.Tab(label='Señal en el tiempo', value='señal_tiempo'),
-                                                                         dcc.Tab(label='Señal en el tiempo por grupos', value='señal_tiempo_grupos')])])
+                                                                         dcc.Tab(label='Señal en el tiempo por grupos', value='señal_tiempo_grupos')])]),
+                                                      
                          ])])]),
                     # Graph
                     html.Div([
-                        
-                        html.Div(className="bg-white",
-                                 children=[html.H5(id='descripcion'),
-                                           dcc.Graph(id="plot",
-                                                     figure={'data':[{'x':[1,2],'y':[3,1]}]} ) ] ),
-                        html.Div(className="eight columns card-right",
-                                 children=[html.Div(className="bg-white-3",
-                                                    children=[html.H5("MÉTRICAS"),
-                                                              dash_table.DataTable(id='table',
-                                                                                   data=[] ) ] ) ]
-                            )],
+                        dcc.Graph(id="plot"),
+                        html.P("Detalle de la información :", className="control_label"),
+                        html.Button("Download CSV", id="btn_csv"),
+                        dcc.Download(id="download-dataframe-csv")
+                        ],
                         id="countGraphContainer",
                         className="pretty_container")
                     ])
-
-#=============================> callbacks
+###########
+#callbacks#
+###########
 @app.callback(
     Output("plot", "figure"),
     [Input("signal", "value"), 
@@ -118,38 +143,124 @@ app.layout = html.Div(
      Input('day', 'date')]
 )
 def update_grafico(signal, type_graph, day):
-    
+    """Muestra el tipo de gráfico a visualzar"""
     data = get_data(signal, day)
     data.columns = ["Time", "groupings", "value"]
     
+    mean = np.mean(data.value)
+    std = np.std(data.value)
+    
+    q1 = np.quantile(data.value, .25)
+    q3 = np.quantile(data.value, .75)
+    
     if type_graph == 'histograma':
+        bar_graph = px.histogram(data,
+                                 x = "value",
+                                 title = r"Histograma señal : {}".format(signal))
         
-        bar_graph = px.histogram(data_frame = data[[signal]], title = signal, x = signal)
+        bar_graph.add_vline(x = mean, line_dash = "dash", line_color = "red", annotation_text = "Promedio")
+        bar_graph.add_vline(x = std, line_dash = "dash", line_color = "red", annotation_text = "std")
+        
+        bar_graph.add_vline(x = q1, line_dash = "dash", line_color = "red", annotation_text = "Q1")
+        bar_graph.add_vline(x = q3, line_dash = "dash", line_color = "red", annotation_text = "Q3")
         
         return bar_graph
-            
     elif type_graph == 'señal_tiempo':
-        
-        bar_graph=px.line(data_frame = data, x = [d for d in data['Time']], y = signal, title = signal) 
-                
-        return bar_graph
-        
+        bar_line = px.line(data_frame = data,
+                           x = data["Time"],
+                           y = data["value"],
+                           title = r"Serie de tiempo señal : {}".format(signal)) 
+        return bar_line
     elif type_graph == 'señal_tiempo_grupos':
-        
-        bar_graph = px.scatter(
+        scatter_graph = px.scatter(
             data,
             x = "Time",
             y = "value", 
             color = "groupings",
             width = 1600,
             height = 700,
-            title = r"Grupos generados por señal : {}".format(signal))
-
-        return bar_graph
-    
+            title = r"Serie de tiempo grupos : Grado | Velocidad | Ancho : {}".format(signal))
+        return scatter_graph
     else:
-    
         return {}
+
+# Selectors -> counts
+@app.callback(
+    Output("count", "children"),
+    [Input("signal", "value"), Input('day', 'date')])
+def update_n_counts(signal, day):
+    data = get_data(signal, day)
+    return data.shape[0]
+
+# Selectors -> mean
+@app.callback(
+    Output("mean", "children"),
+    [Input("signal", "value"), Input('day', 'date')])
+def update_mean(signal, day):
+    data = get_data(signal, day)
+    return round(np.mean(data.iloc[:,2]),1)
+
+# Selectors -> std
+@app.callback(
+    Output("std", "children"),
+    [Input("signal", "value"), Input('day', 'date')])
+def update_std(signal, day):
+    data = get_data(signal, day)
+    return round(np.std(data.iloc[:,2]),1)
+
+# Selectors -> min
+@app.callback(
+    Output("min", "children"),
+    [Input("signal", "value"), Input('day', 'date')])
+def update_min(signal, day):
+    data = get_data(signal, day)
+    return round(np.min(data.iloc[:,2]),1)
+
+# Selectors -> max
+@app.callback(
+    Output("max", "children"),
+    [Input("signal", "value"), Input('day', 'date')])
+def update_max(signal, day):
+    data = get_data(signal, day)
+    return round(np.max(data.iloc[:,2]),1)
+
+# Selectors -> Q1
+@app.callback(
+    Output("Q1", "children"),
+    [Input("signal", "value"), Input('day', 'date')])
+def update_q1(signal, day):
+    data = get_data(signal, day)
+    return round(np.quantile(data.iloc[:,2], .25),1)
+
+# Selectors -> Q3
+@app.callback(
+    Output("Q3", "children"),
+    [Input("signal", "value"), Input('day', 'date')])
+def update_q3(signal, day):
+    data = get_data(signal, day)
+    return round(np.quantile(data.iloc[:,2], .75),1)
+
+# Selectors -> Values null
+@app.callback(
+    Output("vall_null", "children"),
+    [Input("signal", "value"), Input('day', 'date')])
+def update_vall_null(signal, day):
+    data = get_data(signal, day)
+    return sum(data.iloc[:,2].isnull())
+
+# Main table -> data details
+@app.callback(
+    Output("download-dataframe-csv", "data"),
+    Input("btn_csv", "n_clicks"),
+    prevent_initial_call=True,
+)
+def func(signal, day):
+    
+    data = get_data(signal, day)
+    
+    data_statistics_group = data.groupby("groupings").count()
+    
+    return dcc.send_data_frame(data_statistics_group.to_csv, r"data_statistics_{}.csv".format(signal), index=False)
 
 # Main
 if __name__ == "__main__":
