@@ -17,7 +17,7 @@ import pandas as pd
 import plotly.express as px
 import numpy as np
 import plotly.graph_objs as go
-from scipy import stats
+#from scipy import stats
 from dash import dash_table
 
 from datetime import date, timedelta, datetime
@@ -52,198 +52,80 @@ def get_data(señal, dias, dia):
     
     return ddf_signal[(ddf_signal["Time"] >= inicio) & (ddf_signal["Time"] <= fin)].loc[:,["Time","groupings",señal]]
 
-#===========================>Componenctes DCC
-HEADER = html.H5('Calidad de señal')
-
-SEÑAL = dcc.Dropdown(ddf_signal.columns[1:-1],id="señal")
-
-TABS =  dcc.Tabs(id="tipo_grafico", value='tab-1-example-graph', children=[
-        dcc.Tab(label='Histograma', value='histograma'),
-        dcc.Tab(label='Señal en el tiempo', value='señal_tiempo'),
-        ])
-
-TABLA = dash_table.DataTable(id='table',
-                            data=[])
-
-DIA = dcc.DatePickerSingle(
-            id='fecha',
-            min_date_allowed=datetime(2022, 1, 1),
-            max_date_allowed=datetime(2022, 12, 2))
-
-
-TEXTO = dcc.Textarea(
-        id='textarea-example-output',
-        value='Textarea content initialized\nwith multiple lines of text',
-        style={'width': '100%', 'height': 300},
-    )
-BOTON=html.Button('Filtrar', id='textarea-state-example-button', n_clicks=0),
-TEXTO=html.Div(id='textarea-state-example-output', style={'whiteSpace': 'pre-line'})
-GRAFICO_GENERAL=dcc.Graph(id='grafico',
-                        figure={'data':[
-                        {'x':[1,2],'y':[3,1]}
-                        ]}              
-                    )
-GRAFICO_UN_DIA = dcc.Graph(id='grafico_un_dia',
-                        figure={'data':[
-                        {'x':[1,2],'y':[3,1]}
-                        ]}              
-                    )
-
-SLIDER = dcc.Slider(0, 2,
-    step=None,
-    marks={
-        1: '1',
-        2: '2',
-
-    },
-    value=1000,
-    id='slider'
-)
-
-    
-columnas = [
-    {"id": 0, "name": "Métricas"},
-    {"id": 1, "name": "Valores"},
-    ]    
-
-
 #=============================>LAYOUT
 # App Layout
 app.layout = html.Div(
     children=[
+        
         # Error Message
         html.Div(id="error-message"),
+        
         # Top Banner
-        html.Div(
-            className="study-browser-banner row",
-            children=[
-                html.H2(className="h2-title", children="CALIDAD DE SEÑAL"),
-                html.Div(
-                    className="div-logo",
-                    children=html.Img(
-                        className="logo", src=app.get_asset_url("Ternium.png")
-                    ),
-                ),
-                html.H2(className="h2-title-mobile", children="CALIDAD DE SEÑAL"),
-            ],
-        ),
+        html.Div(className="study-browser-banner row",
+                 children=[html.H2(className="h2-title", children="CALIDAD DE SEÑAL"),
+                           html.Div(className="div-logo",children=html.Img(className="logo", src=app.get_asset_url("Ternium.png"))),
+                           html.H2(className="h2-title-mobile", children="CALIDAD DE SEÑAL")
+                           ]),
+        
         # Body of the App
-        html.Div(
-            className="row app-body",
-            children=[
-                # User Controls
-                html.Div(
-                    className="four columns card",
-                    children=[
-                        html.Div(
-                            className="bg-white user-control",
-                            children=[
-                                html.Div(
-                                    className="padding-top-bot",
-                                    children=[
-                                        html.H6("SELECCIONA SEÑAL"),
-                                        dcc.Dropdown(ddf_signal.columns[1:-1],id="señal"),
-                                    ],
-                                ),
-                                html.Div(
-                                    className="padding-top-bot",
-                                    children=[
-                                        html.H6("ABALIZAR UN DÍA"),
-                                        DIA
-                                    ]
-                                ),
-                                
-                                html.Div(
-                                    className="padding-top-bot",
-                                    children=[
-                                        html.H6(" "),
-                                            html.Button('Buscar Señal', id='boton', n_clicks=0)
-                                    ]
-                                ),
-                                html.Div(
-                                    className="padding-top-center",
-                                    children=[
-                                        html.H6(' '),
-                                        html.H6(" "),
-                                        dcc.Loading(
-                                            id="loading-1",
-                                            type="default",
-                                            children=html.Div(id="loading")
-                                        ),
-                                        html.H6(' ')
-                                    ]
-                                ),
-                                
-                                html.Div(
-                                    className="padding-top-bot",
-                                    children=[
-                                            html.Br(' '),
-                                            html.H6("SELECCIONA TIPO DE GRAFICO"),
-                                            dcc.Tabs(id="tipo_grafico", children=[
-                                            dcc.Tab(label='Histograma', value='histograma'),
-                                            dcc.Tab(label='Señal en el tiempo', value='señal_tiempo'),
-                                            dcc.Tab(label='Señal en el tiempo por grupos', value='señal_tiempo_grupos'),
-                                            ]
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        )
-                    ],
-                ),
+        html.Div(className="row app-body",
+                 children=[
+
+                     # User Controls
+                     html.Div(
+                         className="four columns card",
+                         children=[html.Div(className="bg-white user-control",
+                                            children=[html.Div(className="padding-top-bot",
+                                                               children=[html.H6("SELECCIONA SEÑAL"),
+                                                                         dcc.Dropdown(ddf_signal.columns[1:-1],id="señal")]),
+                                                      html.Div(className="padding-top-bot",
+                                                               children=[html.H6("ABALIZAR UN DÍA"),
+                                                                         dcc.DatePickerSingle(
+                                                                                     id='fecha',
+                                                                                     min_date_allowed=datetime(2022, 1, 1),
+                                                                                     max_date_allowed=datetime(2022, 12, 2)) ]),
+                                                      html.Div(className="padding-top-bot",
+                                                               children=[html.H6(" "),
+                                                                         html.Button('Buscar Señal', id='boton', n_clicks=0)]),
+                                                      html.Div(className="padding-top-center",
+                                                               children=[html.H6(' '),
+                                                                         dcc.Loading(id="loading-1", type="default", children=html.Div(id="loading")),
+                                                                         html.H6(' ')]),
+                                                      
+                                                      html.Div(className="padding-top-bot", 
+                                                               children=[html.Br(' '),
+                                                                         html.H6("SELECCIONA TIPO DE GRAFICO"),
+                                                                         dcc.Tabs(id="tipo_grafico", children=[
+                                                                         dcc.Tab(label='Histograma', value='histograma'),
+                                                                         dcc.Tab(label='Señal en el tiempo', value='señal_tiempo'),
+                                                                         dcc.Tab(label='Señal en el tiempo por grupos', value='señal_tiempo_grupos')])])
+                         ])]),
                 
                 # Graph
-                html.Div(
-                    className="eight columns card-left",
-                    children=[
-                        html.Div(
-                            className="bg-white",
-                            children=[
-                                html.H5(id='descripcion'),
-                                dcc.Graph(id="plot",
-                                        figure={'data':[
-                                            {'x':[1,2],'y':[3,1]}
-                                            ]}),
-                            ],
-                        ),
-                        html.Div(
-                            className="eight columns card-right",
-                            children=[
-                                html.Div(
-                                className="bg-white-3",
-                                children=[
-                                            html.H5("MÉTRICAS"),
-                                            dash_table.DataTable(
-                                            id='table',
-                                            data=[]
-                                            )
-                                    ],
-                                ),               
-                            ],
-                        ),
-                        
-                        html.Div(
-                            className="four columns card-right",
-                            children=[
-                                html.Div(
-                                    className="bg-white-2",
-                                    children=[
-                                                    html.H5("VALORES NULOS"),
-                                                    daq.Gauge(
-                                                        showCurrentValue=True,
-                                                        min=0,
-                                                        id='valores_nulos',
-                                            )
-                                    ],
-                                ),               
-                            ],
-                        ),
-                    ],
-                ),  
-            ],
-        ),
-    ]
-)
+                html.Div(className="eight columns card-left",
+                         children=[
+                             html.Div(className="bg-white",
+                                      children=[html.H5(id='descripcion'),
+                                                dcc.Graph(id="plot",
+                                                          figure={'data':[{'x':[1,2],'y':[3,1]}]} ) ] ),
+
+                             html.Div(className="eight columns card-right",
+                                      children=[html.Div(className="bg-white-3",
+                                                         children=[html.H5("MÉTRICAS"),
+                                                                   dash_table.DataTable(id='table',
+                                                                                        data=[] ) ] ) ]
+                                     ),
+                             
+                             html.Div(className="four columns card-right",
+                                      children=[
+                                          html.Div(className="bg-white-2",
+                                                   children=[html.H5("VALORES NULOS"),
+                                                             daq.Gauge(showCurrentValue=True, 
+                                                                       min=0,
+                                                                       id='valores_nulos')]) ])
+                      ])
+                ])
+        ])
 
 
 #=============================> callbacks
