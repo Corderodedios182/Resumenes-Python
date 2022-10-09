@@ -22,7 +22,7 @@ def date_range_to_be_extracted(day_gregorate = datetime.today()):
                  date_range = [20220927, 20220928, 20220929, 20220930, 20221002]
     """
     
-    day_gregorate_start = datetime.today() + timedelta(days =-3)
+    day_gregorate_start = datetime.today() + timedelta(days =-1)
     day_gregorate_end = datetime.today()
     
     yr_start = day_gregorate_start.year

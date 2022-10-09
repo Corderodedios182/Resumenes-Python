@@ -17,8 +17,8 @@ import dash_html_components as html
 from dash import dash_table
 import dash_daq as daq
 
-import plotly.io as pio
-pio.renderers.default='browser'
+#import plotly.io as pio
+#pio.renderers.default='browser'
 
 #Data Processing
 import pandas as pd
@@ -32,19 +32,12 @@ import dask.dataframe as dd
 ddf_signal = dd.read_csv("data/ddf_signal/*.csv").compute()
 ddf_signal['Time'] = pd.to_datetime(ddf_signal['Time'])
 
-def get_data(signal, day, days = 1):
-    
-    inicio = datetime.strptime(str(day), '%Y-%m-%d') - timedelta(days= int(days))    
-    fin =    datetime.strptime(str(day), '%Y-%m-%d') + timedelta(days= int(days))
-    
-    return ddf_signal[(ddf_signal["Time"] >= inicio) & (ddf_signal["Time"] <= fin)].loc[:,["Time","groupings",signal]]
-
 #Filtros ddebbug
 input_country = 'Argentina'
 signal = "s4_drv_net_a_ea_seg12_torque_ref_C1074856020"
 
-day = '2022-10-02'
-
+day = '2022-10-08'
+grado_acero = 7546
 app = dash.Dash( __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}] )
 app.title = "Calidad de la señal"
 server = app.server
@@ -77,6 +70,10 @@ app.layout = html.Div(
                                                                                      id ='day',
                                                                                      min_date_allowed = datetime.today() + timedelta(days =-30),
                                                                                      max_date_allowed = datetime.today() ) ]),
+                                                      
+                                                      html.Div(children=[html.H6("Selecciona un grado de acero : "),
+                                                                                                      dcc.Dropdown(ddf_signal["grado_acero"].unique(),
+                                                                                                                   id = "grado_acero")]),
 
                                                       html.Div(children=[html.H6(" "),
                                                                          html.Button('Consultar datos de Señal : ', id='boton', n_clicks=0)]),
@@ -133,19 +130,39 @@ app.layout = html.Div(
                         id="countGraphContainer",
                         className="pretty_container")
                     ])
-###########
-#callbacks#
-###########
+
+###################
+# Helper functions#
+###################
+def get_data(signal = signal, day = day, days = 1, grado_acero = 0):
+    
+    inicio = datetime.strptime(str(day), '%Y-%m-%d') - timedelta(days= int(days))    
+    fin =    datetime.strptime(str(day), '%Y-%m-%d') + timedelta(days= int(days))
+    
+    columns = ["Time","groupings","grado_acero",signal]
+    
+    if grado_acero != 0:
+        return ddf_signal[(ddf_signal["Time"] >= inicio) &
+                          (ddf_signal["Time"] <= fin) & 
+                          (ddf_signal["grado_acero"] == grado_acero)].loc[:,columns]
+    else: 
+        return ddf_signal[(ddf_signal["Time"] >= inicio) & (ddf_signal["Time"] <= fin)].loc[:,columns]
+
+##################
+#Create callbacks#
+##################
+
 @app.callback(
     Output("plot", "figure"),
-    [Input("signal", "value"), 
+    [Input("signal", "value"),
      Input("type_graph", "value"),
-     Input('day', 'date')]
+     Input('day', 'date'),
+     Input("grado_acero", "value")     ]
 )
-def update_grafico(signal, type_graph, day):
+def update_grafico(signal, type_graph, day, grado_acero):
     """Muestra el tipo de gráfico a visualzar"""
-    data = get_data(signal, day)
-    data.columns = ["Time", "groupings", "value"]
+    data = get_data(signal, day, grado_acero)
+    data.columns = ["Time", "groupings", "grado_acero", "value"]
     
     mean = np.mean(data.value)
     std = np.std(data.value)
@@ -176,10 +193,12 @@ def update_grafico(signal, type_graph, day):
             data,
             x = "Time",
             y = "value", 
-            color = "groupings",
-            width = 1600,
-            height = 700,
+            color = "grado_acero",
             title = r"Serie de tiempo grupos : Grado | Velocidad | Ancho : {}".format(signal))
+        
+        scatter_graph.update_traces(mode="markers+lines", hovertemplate=None)
+        scatter_graph.update_layout(hovermode="x")
+        
         return scatter_graph
     else:
         return {}

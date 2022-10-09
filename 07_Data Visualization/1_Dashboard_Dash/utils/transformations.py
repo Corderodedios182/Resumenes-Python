@@ -54,9 +54,7 @@ def format_groups(df):
     df["groupings"] = df["grado_acero"].astype(str) + " | " + \
                       df["velocidad_linea"].astype(str) + " | " + \
                       df["ancho_slab"].astype(str)
-                        
-    df = df.drop(["ancho_slab", "velocidad_linea", "grado_acero"], axis = 1)
-
+    
     return df
 
 @dask.delayed
