@@ -70,6 +70,8 @@ app.layout = html.Div(
                                                       html.Div(children=[html.H6("Selecciona un día : "),
                                                                          dcc.DatePickerSingle(
                                                                                      id ='day',
+                                                                                     date = datetime.strptime(str(day), '%Y-%m-%d') - timedelta(days= int(1)),
+                                                                                     
                                                                                      min_date_allowed = datetime.today() + timedelta(days =-30),
                                                                                      max_date_allowed = datetime.today() ) ]),
                                                       
@@ -118,10 +120,12 @@ app.layout = html.Div(
                                                       
                                                       html.Div(children=[html.Br(' '),
                                                                          html.H6("Selecciona un tipo de gráfico : "),
-                                                                         dcc.Tabs(id="type_graph", children=[
-                                                                         dcc.Tab(label='Histograma', value='histograma'),
-                                                                         dcc.Tab(label='Señal en el tiempo', value='señal_tiempo'),
-                                                                         dcc.Tab(label='Señal en el tiempo por grupos', value='señal_tiempo_grupos')])]),
+                                                                         dcc.Tabs(id="type_graph", value = 'histograma',
+                                                                                  children=[
+                                                                                      dcc.Tab(label='Histograma', value='histograma'),
+                                                                                      dcc.Tab(label='Señal en el tiempo', value='señal_tiempo'),
+                                                                                      dcc.Tab(label='Señal en el tiempo por grupos', value='señal_tiempo_grupos')]
+                                                                                  )]),
                                                       
                          ])])]),
                     # Graph
