@@ -62,8 +62,10 @@ app.layout = html.Div(
                      # User Controls
                      html.Div(
                          children=[html.Div(children=[html.Div(children=[html.H6("Selecciona una señal : "),
-                                                                         dcc.Dropdown(ddf_signal.columns[1:-1],
-                                                                                      id = "signal")]),
+                                                                         dcc.Dropdown(options = ddf_signal.columns[1:-1],
+                                                                                      id = "signal",
+                                                                                      value = ddf_signal.columns[1:-1][0]),
+                                                                                      ]),
 
                                                       html.Div(children=[html.H6("Selecciona un día : "),
                                                                          dcc.DatePickerSingle(
@@ -73,7 +75,9 @@ app.layout = html.Div(
                                                       
                                                       html.Div(children=[html.H6("Selecciona un grado de acero : "),
                                                                                                       dcc.Dropdown(ddf_signal["grado_acero"].unique(),
-                                                                                                                   id = "grado_acero")]),
+                                                                                                                   id = "grado_acero",
+                                                                                                                   value = ddf_signal["grado_acero"].unique(),
+                                                                                                                   multi=True)]),
 
                                                       html.Div(children=[html.H6(" "),
                                                                          html.Button('Consultar datos de Señal : ', id='boton', n_clicks=0)]),
@@ -142,11 +146,16 @@ def get_data(signal = signal, day = day, days = 1, grado_acero = 0):
     columns = ["Time","groupings","grado_acero",signal]
     
     if grado_acero != 0:
-        return ddf_signal[(ddf_signal["Time"] >= inicio) &
+        data =  ddf_signal[(ddf_signal["Time"] >= inicio) &
                           (ddf_signal["Time"] <= fin) & 
-                          (ddf_signal["grado_acero"] == grado_acero)].loc[:,columns]
+                          (ddf_signal["grado_acero"].isin(grado_acero))].loc[:,columns]
+    
     else: 
-        return ddf_signal[(ddf_signal["Time"] >= inicio) & (ddf_signal["Time"] <= fin)].loc[:,columns]
+        data = ddf_signal[(ddf_signal["Time"] >= inicio) & (ddf_signal["Time"] <= fin)].loc[:,columns]
+        
+    data.columns = ["Time", "groupings", "grado_acero", "value"]
+    
+    return data
 
 ##################
 #Create callbacks#
@@ -161,8 +170,7 @@ def get_data(signal = signal, day = day, days = 1, grado_acero = 0):
 )
 def update_grafico(signal, type_graph, day, grado_acero):
     """Muestra el tipo de gráfico a visualzar"""
-    data = get_data(signal, day, grado_acero)
-    data.columns = ["Time", "groupings", "grado_acero", "value"]
+    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
     
     mean = np.mean(data.value)
     std = np.std(data.value)
@@ -183,7 +191,7 @@ def update_grafico(signal, type_graph, day, grado_acero):
         
         return bar_graph
     elif type_graph == 'señal_tiempo':
-        bar_line = px.line(data_frame = data,
+        bar_line = px.scatter(data_frame = data,
                            x = data["Time"],
                            y = data["value"],
                            title = r"Serie de tiempo señal : {}".format(signal)) 
@@ -193,10 +201,10 @@ def update_grafico(signal, type_graph, day, grado_acero):
             data,
             x = "Time",
             y = "value", 
-            color = "grado_acero",
+            color = "groupings",
             title = r"Serie de tiempo grupos : Grado | Velocidad | Ancho : {}".format(signal))
         
-        scatter_graph.update_traces(mode="markers+lines", hovertemplate=None)
+        scatter_graph.update_traces(hovertemplate=None)
         scatter_graph.update_layout(hovermode="x")
         
         return scatter_graph
@@ -206,66 +214,66 @@ def update_grafico(signal, type_graph, day, grado_acero):
 # Selectors -> counts
 @app.callback(
     Output("count", "children"),
-    [Input("signal", "value"), Input('day', 'date')])
-def update_n_counts(signal, day):
-    data = get_data(signal, day)
+    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
+def update_n_counts(signal, day, grado_acero):
+    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
     return data.shape[0]
 
 # Selectors -> mean
 @app.callback(
     Output("mean", "children"),
-    [Input("signal", "value"), Input('day', 'date')])
-def update_mean(signal, day):
-    data = get_data(signal, day)
-    return round(np.mean(data.iloc[:,2]),1)
+    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
+def update_mean(signal, day, grado_acero):
+    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
+    return round(np.mean(data.loc[:,"value"]),1)
 
 # Selectors -> std
 @app.callback(
     Output("std", "children"),
-    [Input("signal", "value"), Input('day', 'date')])
-def update_std(signal, day):
-    data = get_data(signal, day)
-    return round(np.std(data.iloc[:,2]),1)
+    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
+def update_std(signal, day, grado_acero):
+    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
+    return round(np.std(data.loc[:,"value"]),1)
 
 # Selectors -> min
 @app.callback(
     Output("min", "children"),
-    [Input("signal", "value"), Input('day', 'date')])
-def update_min(signal, day):
-    data = get_data(signal, day)
-    return round(np.min(data.iloc[:,2]),1)
+    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
+def update_min(signal, day, grado_acero):
+    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
+    return round(np.min(data.loc[:,"value"]),1)
 
 # Selectors -> max
 @app.callback(
     Output("max", "children"),
-    [Input("signal", "value"), Input('day', 'date')])
-def update_max(signal, day):
-    data = get_data(signal, day)
-    return round(np.max(data.iloc[:,2]),1)
+    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
+def update_max(signal, day, grado_acero):
+    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
+    return round(np.max(data.loc[:,"value"]),1)
 
 # Selectors -> Q1
 @app.callback(
     Output("Q1", "children"),
-    [Input("signal", "value"), Input('day', 'date')])
-def update_q1(signal, day):
-    data = get_data(signal, day)
-    return round(np.quantile(data.iloc[:,2], .25),1)
+    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
+def update_q1(signal, day, grado_acero):
+    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
+    return round(np.quantile(data.loc[:,"value"], .25),1)
 
 # Selectors -> Q3
 @app.callback(
     Output("Q3", "children"),
-    [Input("signal", "value"), Input('day', 'date')])
-def update_q3(signal, day):
-    data = get_data(signal, day)
-    return round(np.quantile(data.iloc[:,2], .75),1)
+    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
+def update_q3(signal, day, grado_acero):
+    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
+    return round(np.quantile(data.loc[:,"value"], .75),1)
 
 # Selectors -> Values null
 @app.callback(
     Output("vall_null", "children"),
-    [Input("signal", "value"), Input('day', 'date')])
-def update_vall_null(signal, day):
-    data = get_data(signal, day)
-    return sum(data.iloc[:,2].isnull())
+    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
+def update_vall_null(signal, day, grado_acero):
+    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
+    return sum(data.loc[:,"value"].isnull())
 
 # Main table -> data details
 @app.callback(
