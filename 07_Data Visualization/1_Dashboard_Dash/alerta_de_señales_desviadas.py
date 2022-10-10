@@ -42,10 +42,10 @@ df_ideal = pd.read_csv("data/ddf_dash/df_ideal.csv")
 
 #Filtros ddebbug
 input_country = 'Argentina'
-list_signal = ["hsa12_group_hsarefgaubs_C1075052604", "hsa12_group_hsaactgauts_C1075052605","hsa12_loopout_dslsprtrdactpst_C1075052646", "hsa12_loopout_dslsactfrc_C1075052640"]
+list_signal = ["hsa12_group_hsaactgauts_C1075052605"]
 
 start_date = '2022-10-01'
-end_date = '2022-10-02'
+end_date = '2022-10-07'
 
 app = dash.Dash( __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}] )
 app.title = "Monitorea Predictivo"
@@ -124,13 +124,13 @@ app.layout = html.Div([
     #tabla por días señal | día | estable | media | revisión
     html.Div([
         html.P("Clasificación de las señales :", className="control_label"),
-        dcc.Graph(id = 'table_1'),
+        dcc.Graph(id = 'table_classification_signals'),
         html.P("Señales a revisar :", className="control_label"),
-        dcc.Graph(id = 'table_2'),
+        dcc.Graph(id = 'table_signal_to_review'),
         html.Br(),
-        dcc.Graph(id = 'fig'),
+        dcc.Graph(id = 'graph_signal_status'),
         html.Br(),
-        dcc.Graph(id = 'fig_1'),
+        dcc.Graph(id = 'graph_signal_status_groups'),
         html.P("Detalle de la información :", className="control_label"),
         html.Button("Download CSV", id="btn_csv"),
         dcc.Download(id="download-dataframe-csv")],
@@ -244,58 +244,16 @@ def update_groups_no_found(input_country, list_signal, start_date, end_date):
     
     return keys_group_analyisis.shape[0] - sum(found)
 
-# Main table -> table_2
+# Main table -> table_classification_signals
 @app.callback(
-    Output("table_2", "figure"),
+    Output("table_classification_signals", "figure"),
     [
      Input('input_country', 'value'),
      Input("list_signal", "value"),
      Input("day", "start_date"),
      Input("day", "end_date")
     ])
-def table_details_2(input_country, list_signal, start_date, end_date):
-    
-    dff = filter_dataframe(df_dash, input_country, list_signal, start_date, end_date)
-    
-    dff["key_group"] = dff["day"].astype(str) + dff["signal"]
-    dff = dff[dff["indicator"] == 'revision']
-    dff = dff.loc[:,["day","signal","indicator"]].drop_duplicates()
-    dff.columns = ["dia","señal_a_revisar","indicator"]
-    dff = dff.sort_values("señal_a_revisar")
-    
-    trace_0 = go.Table(
-        header=dict(values=list(dff.columns),
-                    fill_color='paleturquoise',
-                    align='center'),
-
-        cells=dict(values=[dff.dia,
-                           dff.señal_a_revisar,
-                           dff.indicator,
-                           ],
-                   fill_color='lavender',
-                   align='center'))
-
-    layout_0 = go.Layout(legend = {"x":.9,"y":.5},  margin=dict(l=20, r=20, t=20, b=20),
-                         width=1600,
-                         height = 200,
-                         showlegend = False,
-                         template = 'ggplot2',
-                         )
-
-    fig_1 = go.Figure(data = [trace_0], layout = layout_0)
-
-    return fig_1
-
-# Main table -> table_1
-@app.callback(
-    Output("table_1", "figure"),
-    [
-     Input('input_country', 'value'),
-     Input("list_signal", "value"),
-     Input("day", "start_date"),
-     Input("day", "end_date")
-    ])
-def table_details(input_country, list_signal, start_date, end_date):
+def update_classification_signal(input_country, list_signal, start_date, end_date):
     
     dff = filter_dataframe(df_dash, input_country, list_signal, start_date, end_date)
     
@@ -344,9 +302,57 @@ def table_details(input_country, list_signal, start_date, end_date):
 
     return fig_1
 
-# Main graph -> graph bar
+# Main table -> table_signal_to_review
 @app.callback(
-    Output(component_id = 'fig',
+    Output("table_signal_to_review", "figure"),
+    [
+     Input('input_country', 'value'),
+     Input("list_signal", "value"),
+     Input("day", "start_date"),
+     Input("day", "end_date")
+    ])
+def update_signal_to_review(input_country, list_signal, start_date, end_date):
+    
+    dff = filter_dataframe(df_dash, input_country, list_signal, start_date, end_date)
+    
+    dff["key_group"] = dff["day"].astype(str) + dff["signal"]
+    dff = dff.groupby(["key_group","day","signal","indicator"]).agg({"country":'count'})
+    dff = dff.groupby(level = 0).apply(lambda x: 100 * x / round(float(x.sum()),0)).reset_index()#.sort_values("key_group", ascending= False)
+    dff = dff.sort_values('country', ascending=False).groupby(["day","signal"], as_index=False).first().reset_index()
+    dff = dff.loc[:,["day","signal","indicator","country"]]
+    dff.columns = ["dia","señal","status_señal","porcentaje_status"]
+    dff = dff[dff["status_señal"] == 'revision']
+    dff = dff.sort_values("porcentaje_status")
+    dff["porcentaje_status"] = round(dff["porcentaje_status"])
+    
+    trace_0 = go.Table(
+        header=dict(values=list(dff.columns),
+                    fill_color='paleturquoise',
+                    align='center'),
+
+        cells=dict(values=[dff.dia,
+                           dff.señal,
+                           dff.status_señal,
+                           dff.porcentaje_status
+                           ],
+                   fill_color='lavender',
+                   align='center'))
+
+    layout_0 = go.Layout(legend = {"x":.9,"y":.5},  margin=dict(l=20, r=20, t=20, b=20),
+                         width=1600,
+                         height = 200,
+                         showlegend = False,
+                         template = 'ggplot2',
+                         )
+
+    fig_1 = go.Figure(data = [trace_0], layout = layout_0)
+
+    return fig_1
+
+
+# Main graph -> graph_signal_status
+@app.callback(
+    Output(component_id = 'graph_signal_status',
            component_property = 'figure'),
     [
      Input("input_country", "value"),
@@ -354,7 +360,7 @@ def table_details(input_country, list_signal, start_date, end_date):
      Input("day", "start_date"),
      Input("day", "end_date")
     ])
-def update_fig_bar(input_country, list_signal, start_date, end_date):
+def update_graph_signal_status(input_country, list_signal, start_date, end_date):
 
     dff = filter_dataframe(df_dash, input_country, list_signal, start_date, end_date)
     
@@ -383,9 +389,9 @@ def update_fig_bar(input_country, list_signal, start_date, end_date):
 
     return fig
 
-# Main graph -> graph scatter
+# Main graph -> graph_signal_status_groups
 @app.callback(
-    Output(component_id = 'fig_1',
+    Output(component_id = 'graph_signal_status_groups',
            component_property = 'figure'),
     [
      Input('input_country', 'value'),
