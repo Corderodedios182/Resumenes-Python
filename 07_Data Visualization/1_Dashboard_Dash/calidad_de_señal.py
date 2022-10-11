@@ -12,6 +12,7 @@ import dash
 import dash_html_components as html
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
+from dash import Dash, dcc, html, ctx, dash, dash_table
 import dash_table
 
 import dash_html_components as html
@@ -39,7 +40,7 @@ server = app.server
 
 ####################
 # Create app layout#
-#################a###
+####################
 app.layout = html.Div(
     children=[
         
@@ -77,10 +78,13 @@ app.layout = html.Div(
                                                                                                                    multi=True)]),
 
                                                       html.Div(children=[html.H6(" "),
-                                                                         html.Button('Consultar datos de Señal : ', id='boton', n_clicks=0)]),
+                                                                         html.Button('Consultar datos de Señal : ', 
+                                                                                     id='loading-input',
+                                                                                     n_clicks=0)]),
 
                                                       html.Div(children=[html.H6(' '),
-                                                                         dcc.Loading(id="loading-1", type="default", children=html.Div(id="loading")),
+                                                                         dcc.Loading(id="loading-1", type="default",
+                                                                                     children=html.Div(id="loading-output")),
                                                                          html.H6(' ')]),
                                                       
                                                       html.Div(children = [html.Br(' '),
@@ -211,25 +215,31 @@ def update_grafico(signal,
 # Selectors -> table_signal_statistics
 @app.callback(
     [Output("table_signal_statistics", "data"),
-     Output("table_signal_statistics", "columns")],
+     Output("table_signal_statistics", "columns"),
+     Output("loading-output", "children")],
     [Input("signal", "value"),
      Input('day_gregorate', 'date'),
-     Input('grado_acero', 'value')]
+     Input('grado_acero', 'value'),
+     Input('loading-output','value'),
+     Input('loading-input','n_clicks')]
     )
 def update_table_signal_statistics(signal,
                                    day_gregorate,
-                                   grado_acero):
+                                   grado_acero,
+                                   value,
+                                   loading_input):
+    if 'loading-input' == ctx.triggered_id:
+        
+        data = get_data(signal = signal,
+                        day_gregorate = day_gregorate,
+                        grado_acero = grado_acero)
+        
+        signal_statistics = data["value"].describe().reset_index()
+        signal_statistics = pd.pivot_table(signal_statistics, values = "value", columns = "index")
+        signal_statistics["registros_nulos"] = sum(data.loc[:,"value"].isnull())
+        signal_statistics = round(signal_statistics,1)
     
-    data = get_data(signal = signal,
-                    day_gregorate = day_gregorate,
-                    grado_acero = grado_acero)
-    
-    signal_statistics = data["value"].describe().reset_index()
-    signal_statistics = pd.pivot_table(signal_statistics, values = "value", columns = "index")
-    signal_statistics["registros_nulos"] = sum(data.loc[:,"value"].isnull())
-    signal_statistics = round(signal_statistics,1)
-
-    return signal_statistics.to_dict('records'), [{"name": i, "id": i} for i in signal_statistics.columns]
+        return signal_statistics.to_dict('records'), [{"name": i, "id": i} for i in signal_statistics.columns]
 
 # Main table -> data details
 @app.callback(
