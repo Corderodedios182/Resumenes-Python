@@ -28,16 +28,9 @@ import datetime
 from datetime import datetime, timedelta
 import dask.dataframe as dd
 
-#DataBases Master
-ddf_signal = dd.read_csv("data/ddf_signal/*.csv").compute()
-ddf_signal['Time'] = pd.to_datetime(ddf_signal['Time'])
+from utils import values
+from utils import extract_month_azure
 
-#Filtros ddebbug
-input_country = 'Argentina'
-signal = "s4_drv_net_a_ea_seg12_torque_ref_C1074856020"
-
-day = '2022-10-08'
-grado_acero = 7546
 app = dash.Dash( __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}] )
 app.title = "Calidad de la señal"
 server = app.server
@@ -62,23 +55,23 @@ app.layout = html.Div(
                      # User Controls
                      html.Div(
                          children=[html.Div(children=[html.Div(children=[html.H6("Selecciona una señal : "),
-                                                                         dcc.Dropdown(options = ddf_signal.columns[1:-1],
+                                                                         dcc.Dropdown(options = values.signals[1:],
                                                                                       id = "signal",
-                                                                                      value = ddf_signal.columns[1:-1][0]),
+                                                                                      value = values.signals[1:][0]),
                                                                                       ]),
 
                                                       html.Div(children=[html.H6("Selecciona un día : "),
                                                                          dcc.DatePickerSingle(
-                                                                                     id ='day',
-                                                                                     date = datetime.strptime(str(day), '%Y-%m-%d') - timedelta(days= int(1)),
+                                                                                     id ='day_gregorate',
+                                                                                     date = datetime.today() - timedelta(days= int(1)),
                                                                                      
                                                                                      min_date_allowed = datetime.today() + timedelta(days =-30),
                                                                                      max_date_allowed = datetime.today() ) ]),
                                                       
                                                       html.Div(children=[html.H6("Selecciona un grado de acero : "),
-                                                                                                      dcc.Dropdown(ddf_signal["grado_acero"].unique(),
+                                                                                                      dcc.Dropdown(values.grados,
                                                                                                                    id = "grado_acero",
-                                                                                                                   value = ddf_signal["grado_acero"].unique(),
+                                                                                                                   value = values.grados,
                                                                                                                    multi=True)]),
 
                                                       html.Div(children=[html.H6(" "),
@@ -142,20 +135,27 @@ app.layout = html.Div(
 ###################
 # Helper functions#
 ###################
-def get_data(signal = signal, day = day, days = 1, grado_acero = 0):
+#Filtros ddebbug
+signal = "s4_drv_net_a_ea_seg12_torque_ref_C1074856020"
+day_gregorate = '2022-10-09'
+days = 2
+grado_acero = [7011]
+def get_data(signal = "s4_drv_net_a_ea_seg12_torque_ref_C1074856020",
+             day_gregorate = '2022-10-09',
+             days = 0,
+             grado_acero = []):
     
-    inicio = datetime.strptime(str(day), '%Y-%m-%d') - timedelta(days= int(days))    
-    fin =    datetime.strptime(str(day), '%Y-%m-%d') + timedelta(days= int(days))
+    extract_month_azure.azure_data_extraction(day_gregorate = day_gregorate, days = days)
+
+    ddf_signal = dd.read_csv(r"data/ddf_signal/ddf_signal_{}.csv".format(day_gregorate.replace("-",""))).compute()
+    ddf_signal['Time'] = pd.to_datetime(ddf_signal['Time'])
     
     columns = ["Time","groupings","grado_acero",signal]
     
-    if grado_acero != 0:
-        data =  ddf_signal[(ddf_signal["Time"] >= inicio) &
-                          (ddf_signal["Time"] <= fin) & 
-                          (ddf_signal["grado_acero"].isin(grado_acero))].loc[:,columns]
-    
+    if len(grado_acero) != 0:
+        data =  ddf_signal[(ddf_signal["grado_acero"].isin(grado_acero))].loc[:,columns]
     else: 
-        data = ddf_signal[(ddf_signal["Time"] >= inicio) & (ddf_signal["Time"] <= fin)].loc[:,columns]
+        data = ddf_signal.loc[:,columns]
         
     data.columns = ["Time", "groupings", "grado_acero", "value"]
     
@@ -169,13 +169,19 @@ def get_data(signal = signal, day = day, days = 1, grado_acero = 0):
     Output("plot", "figure"),
     [Input("signal", "value"),
      Input("type_graph", "value"),
-     Input('day', 'date'),
+     Input('day_gregorate', 'date'),
      Input("grado_acero", "value")     ]
 )
-def update_grafico(signal, type_graph, day, grado_acero):
+def update_grafico(signal,
+                   type_graph,
+                   day_gregorate,
+                   grado_acero):
     """Muestra el tipo de gráfico a visualzar"""
-    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
-    
+    data = get_data(signal = signal,
+                    day_gregorate = day_gregorate,
+                    days = 0,
+                    grado_acero = grado_acero)
+
     mean = np.mean(data.value)
     std = np.std(data.value)
     

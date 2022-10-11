@@ -14,7 +14,8 @@ from utils import values
 import dask.dataframe as dd
 import pandas as pd
 
-def date_range_to_be_extracted(day_gregorate = datetime.today()):
+def date_range_to_be_extracted(day_gregorate = '2022-10-08',
+                               days = 0):
     """
     Returns
     -------
@@ -22,8 +23,8 @@ def date_range_to_be_extracted(day_gregorate = datetime.today()):
                  date_range = [20220927, 20220928, 20220929, 20220930, 20221002]
     """
     
-    day_gregorate_start = datetime.today() + timedelta(days =-1)
-    day_gregorate_end = datetime.today()
+    day_gregorate_start = pd.to_datetime(day_gregorate) - timedelta(days = days) 
+    day_gregorate_end = pd.to_datetime(day_gregorate)
     
     yr_start = day_gregorate_start.year
     mnth_start = day_gregorate_start.month
@@ -45,7 +46,8 @@ def date_range_to_be_extracted(day_gregorate = datetime.today()):
     
     return date_range
 
-def status_download_files():
+def status_download_files(day_gregorate = '2022-10-08',
+                          days = 0):
     """
     Returns
     -------
@@ -54,7 +56,8 @@ def status_download_files():
                                              'date_range': [20220927]}
     """
     
-    date_range = date_range_to_be_extracted()
+    date_range = date_range_to_be_extracted(day_gregorate = day_gregorate,
+                                            days = days)
     
     extract_number = lambda x : int(re.findall(r'\d+', x)[0])
     files_exist = [extract_number(x) for x in os.listdir("data/ddf_signal")]
@@ -75,7 +78,7 @@ def status_download_files():
     
     return status_extraction
 
-def azure_data_extraction():
+def azure_data_extraction(day_gregorate = '2022-10-08', days = 0):
     """
     Returns
     -------
@@ -83,7 +86,7 @@ def azure_data_extraction():
         status_download_files()
     """
     
-    status_download = status_download_files()
+    status_download = status_download_files(day_gregorate = day_gregorate, days = days)
     
     if status_download["status"] == False:
         

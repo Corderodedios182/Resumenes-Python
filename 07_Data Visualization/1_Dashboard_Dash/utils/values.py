@@ -4,6 +4,11 @@ Created on Tue Sep 13 12:02:16 2022
 
 @author: cflorelu
 """
+import pandas as pd
+ideal = pd.read_csv("data/ddf_dash/ddf_may.csv")
+
+grados = list(ideal["Grado"].astype(int).unique())
+
 signals = ["Time",
            "s4_an2l_ramactwidthboc_C1611", #ancho plataforma
            "s4_hmo_pmac_fmplc_m5043_an2l_hmo_castspeed_C0470", #velodicdad línea
