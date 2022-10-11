@@ -12,8 +12,10 @@ import dash
 import dash_html_components as html
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
+import dash_table
 
 import dash_html_components as html
+import dash_bootstrap_components as dbc
 from dash import dash_table
 import dash_daq as daq
 
@@ -81,35 +83,19 @@ app.layout = html.Div(
                                                                          dcc.Loading(id="loading-1", type="default", children=html.Div(id="loading")),
                                                                          html.H6(' ')]),
                                                       
-                                                      html.Div([
-                                                          html.Div(
-                                                              [html.H6(id="count"), html.P("Registros")],
-                                                              className="mini_container"),
-                                                          html.Div(
-                                                              [html.H6(id="mean"), html.P("Promedio")],
-                                                              className="mini_container"),
-                                                          html.Div(
-                                                              [html.H6(id="std"), html.P("Desviación Estandar")],
-                                                              className="mini_container"),
-                                                          html.Div(
-                                                              [html.H6(id="min"), html.P("Mínimo")],
-                                                              className="mini_container"),
-                                                          html.Div(
-                                                              [html.H6(id="max"), html.P("Máximo")],
-                                                              className="mini_container"),
-                                                          html.Div(
-                                                              [html.H6(id="Q1"), html.P("Primer Quantile")],
-                                                              className="mini_container"),
-                                                          html.Div(
-                                                              [html.H6(id="Q3"), html.P("Tercer Quantile")],
-                                                              className="mini_container"),
-                                                          html.Div(
-                                                              [html.H6(id="vall_null"), html.P("Valores Nulos")],
-                                                              className="mini_container")
-                                                          ],
-                                                          id="info-container",
-                                                          className="row container-display"
-                                                          ),
+                                                      html.Div(children = [html.Br(' '),
+                                                                           html.H6('Estadísticas descriptivas de la señal.'),
+                                                                           dash_table.DataTable(
+                                                                                   id="table_signal_statistics",
+                                                                                   style_as_list_view=True,
+                                                                                   editable=False,
+                                                                                   style_table={"overflowY": "scroll",
+                                                                                                "width": "100%",
+                                                                                                "minWidth": "100%",
+                                                                                                },
+                                                                                     style_header={"backgroundColor": "#d96210", "fontWeight": "bold"},
+                                                                                     style_cell={"textAlign": "center", "padding": "10px"},
+                                                                                     )]),
                                                       
                                                       html.Div(children=[html.Br(' '),
                                                                          html.H6("Selecciona un tipo de gráfico : "),
@@ -125,7 +111,7 @@ app.layout = html.Div(
                     html.Div([
                         dcc.Graph(id="plot"),
                         html.P("Detalle de la información :", className="control_label"),
-                        html.Button("Download CSV", id="btn_csv"),
+                        html.Button("Download CSV", id="btn_csv_fails"),
                         dcc.Download(id="download-dataframe-csv")
                         ],
                         id="countGraphContainer",
@@ -136,11 +122,11 @@ app.layout = html.Div(
 # Helper functions#
 ###################
 #Filtros ddebbug
-signal = "s4_drv_net_a_ea_seg12_torque_ref_C1074856020"
+signal = "hsa12_loopout_esrsprtrdactrod_C1075052645"
 day_gregorate = '2022-10-09'
 days = 2
 grado_acero = [7011]
-def get_data(signal = "s4_drv_net_a_ea_seg12_torque_ref_C1074856020",
+def get_data(signal = "hsa12_loopout_esrsprtrdactrod_C1075052645",
              day_gregorate = '2022-10-09',
              days = 0,
              grado_acero = []):
@@ -221,84 +207,54 @@ def update_grafico(signal,
     else:
         return {}
 
-# Selectors -> counts
-@app.callback(
-    Output("count", "children"),
-    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
-def update_n_counts(signal, day, grado_acero):
-    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
-    return data.shape[0]
 
-# Selectors -> mean
+# Selectors -> table_signal_statistics
 @app.callback(
-    Output("mean", "children"),
-    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
-def update_mean(signal, day, grado_acero):
-    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
-    return round(np.mean(data.loc[:,"value"]),1)
+    [Output("table_signal_statistics", "data"),
+     Output("table_signal_statistics", "columns")],
+    [Input("signal", "value"),
+     Input('day_gregorate', 'date'),
+     Input('grado_acero', 'value')]
+    )
+def update_table_signal_statistics(signal,
+                                   day_gregorate,
+                                   grado_acero):
+    
+    data = get_data(signal = signal,
+                    day_gregorate = day_gregorate,
+                    grado_acero = grado_acero)
+    
+    signal_statistics = data["value"].describe().reset_index()
+    signal_statistics = pd.pivot_table(signal_statistics, values = "value", columns = "index")
+    signal_statistics["registros_nulos"] = sum(data.loc[:,"value"].isnull())
+    signal_statistics = round(signal_statistics,1)
 
-# Selectors -> std
-@app.callback(
-    Output("std", "children"),
-    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
-def update_std(signal, day, grado_acero):
-    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
-    return round(np.std(data.loc[:,"value"]),1)
-
-# Selectors -> min
-@app.callback(
-    Output("min", "children"),
-    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
-def update_min(signal, day, grado_acero):
-    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
-    return round(np.min(data.loc[:,"value"]),1)
-
-# Selectors -> max
-@app.callback(
-    Output("max", "children"),
-    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
-def update_max(signal, day, grado_acero):
-    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
-    return round(np.max(data.loc[:,"value"]),1)
-
-# Selectors -> Q1
-@app.callback(
-    Output("Q1", "children"),
-    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
-def update_q1(signal, day, grado_acero):
-    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
-    return round(np.quantile(data.loc[:,"value"], .25),1)
-
-# Selectors -> Q3
-@app.callback(
-    Output("Q3", "children"),
-    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
-def update_q3(signal, day, grado_acero):
-    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
-    return round(np.quantile(data.loc[:,"value"], .75),1)
-
-# Selectors -> Values null
-@app.callback(
-    Output("vall_null", "children"),
-    [Input("signal", "value"), Input('day', 'date'), Input('grado_acero', 'value')])
-def update_vall_null(signal, day, grado_acero):
-    data = get_data(signal = signal, day = day, grado_acero = grado_acero)
-    return sum(data.loc[:,"value"].isnull())
+    return signal_statistics.to_dict('records'), [{"name": i, "id": i} for i in signal_statistics.columns]
 
 # Main table -> data details
 @app.callback(
     Output("download-dataframe-csv", "data"),
-    Input("btn_csv", "n_clicks"),
-    prevent_initial_call=True,
-)
-def func(signal, day):
+    [Input("btn_csv", "n_clicks"),
+     Input("signal", "value"),
+     Input('day_gregorate', 'date'),
+     Input('grado_acero', 'value')],
+     prevent_initial_call =True
+    )
+def func(n_clicks,
+         signal,
+         day_gregorate,
+         grado_acero):
     
-    data = get_data(signal, day)
+    if (n_clicks is None):
+        data = get_data(signal = signal,
+                        day_gregorate = day_gregorate,
+                        grado_acero = grado_acero)
     
-    data_statistics_group = data.groupby("groupings").count()
-    
-    return dcc.send_data_frame(data_statistics_group.to_csv, r"data_statistics_{}.csv".format(signal), index=False)
-
+        data_statistics_group = data.groupby("groupings",as_index = False).agg(['min', 'max']).reset_index()
+        
+        return dcc.send_data_frame(data_statistics_group.to_csv, r"data_statistics_{}.csv".format(signal), index=False)
+    else: None
+        
 # Main
 if __name__ == "__main__":
     app.run_server(debug=True, 
