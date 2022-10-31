@@ -31,3 +31,18 @@ def read_data(
         )
     
     return datos
+
+def read_data_test():
+      
+    path = os.getcwd()
+    csv_files = glob.glob(os.path.join(path, "raw/data_repoblada/*.csv"))
+        
+    main_dataframe = pd.DataFrame(pd.read_csv(csv_files[0]))
+      
+    for i in range(1,len(csv_files)):
+        data = pd.read_csv(csv_files[i], sep = ',')
+        df = pd.DataFrame(data)
+        main_dataframe = pd.concat([main_dataframe, df], axis = 0)
+      
+    return main_dataframe
+        

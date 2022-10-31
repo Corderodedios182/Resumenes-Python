@@ -97,20 +97,24 @@ def split_data(
     
     return x_entrna, y_entrna, x_valida, y_valida, x_prueba, y_prueba
 
-## -División de datos - Características, Etiquetas, QIDs
 def obtener_CEQs(
-    X: pd.DataFrame
-    ) -> Tuple[
-               np.ndarray,
-               pd.Series,
-               pd.Series
-               ]:
+    X: pd.DataFrame,
+    y: pd.DataFrame,
+    noms_cols_caracts: List[str],
+) -> \
+Tuple[
+    np.ndarray,
+    pd.Series,
+    pd.Series,
+]:
     """División de los dataframe en columnas específicas.
     Esto para que el modelo pueda aceptar los datos.
 
     Parameters
     ----------
     X : pd.DataFrame
+        _description_
+    y : pd.DataFrame
         _description_
     noms_cols_caracts : List[str]
         _description_
@@ -121,17 +125,17 @@ def obtener_CEQs(
         _description_
     """
     
-    noms_cols_caracts = [
-        'TEXTO_COMPARACION_VECT',                       # Este es el query
-        'D_EVENTO_VECT',                                # Aquí es el vec del documento
-        'DIFF_TEXTO_COMPARACION_VECT_&_D_EVENTO_VECT',  # La diferencia escalar entre vectores
-                        ]
-
     # Características del conjunto de datos
-    Y = X['rank']
-    qids = X['QID']
-
-    X = [ np.vstack(X[nom_columna]) for nom_columna in noms_cols_caracts ]
-    X = np.hstack(X)
+    caracts = \
+        [
+            np.vstack(X[nom_columna])
+            for nom_columna
+            in noms_cols_caracts
+        ]
     
-    return X, Y, qids
+    caracts= np.hstack(caracts)
+    
+    etiquetas = y['rank']
+    qids = X['QID']
+    
+    return caracts, etiquetas, qids

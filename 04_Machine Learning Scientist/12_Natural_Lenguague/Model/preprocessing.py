@@ -28,7 +28,7 @@ def reordering_data(
     )
     
     datos_a_corregir.drop(
-        columns=['index', 'ID_EVALUACION'],
+        columns=[ 'ID_EVALUACION'], #'index',
         inplace=True,
     )
 
@@ -96,7 +96,7 @@ def reordering_data(
         )
     
     datos_a_corregir['rank'] = datos_a_corregir.groupby("QID")["EVALUACION"].rank('first', ascending =  False)
-    datos_a_corregir.loc[datos_a_corregir['rank'] > 21, 'rank'] = 6
+    datos_a_corregir.loc[datos_a_corregir['rank'] > 21, 'rank'] = 22
     
     return datos_a_corregir
 
