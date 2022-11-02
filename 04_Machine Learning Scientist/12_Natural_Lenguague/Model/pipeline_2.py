@@ -121,45 +121,59 @@ kfold = KFold(n_splits=5, shuffle=True, random_state=2)
 def grid_search(params, xgboost = xgboost.XGBRanker()):
 
     grid_model = GridSearchCV(xgboost,
-                            params,
-                            scoring = 'roc_auc',
-                            cv = kfold)
+                              params,
+                              scoring = 'roc_auc',
+                              cv = kfold)
     
     grid_model.fit(X = feats_entrna,
-                  y = labels_entrna,
-                  qid = qids_entrna,
-                  eval_set = [(feats_entrna, labels_entrna), 
-                              (feats_valida, labels_valida)],
-                  eval_qid = [qids_entrna,
-                              qids_valida],
-                  verbose = False)
+                   y = labels_entrna,
+                   qid = qids_entrna,
+                   eval_set = [(feats_entrna, labels_entrna), 
+                               (feats_valida, labels_valida)],
+                   eval_qid = [qids_entrna,
+                               qids_valida],
+                   verbose = False)
 
     best_params = grid_model.best_params_
-
     print("Best params:", best_params)
 
-    best_score = np.sqrt(-grid_model.best_score_)
-
-    print("Best score:", best_score)
-
 grid_search(params = {'objective': ['rank:ndcg'],
-                      'reg_lambda' : [.1],
-                      'subsample':[0.5, 0.6],
-                      'eval_metric': ['map','ndcg','ndcg@5','ndcg@10','rmse','auc']})
+                      'reg_lambda' : [.01,.1,.5,1],
+                      'subsample':[0.4, 0.5, 0.6, 0.7]})
 
 # -- BestModel metrics -- #
 
-grid_search(params = {"method": "random", # grid for all
-                      "metric": {"name": "kendall_tau", "goal": "maximize"},
-                      "parameters": {"learning_rate": {"values": [0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09]},
-                                     "n_estimators": {"values": [130, 140, 150, 160, 170, 180, 190, 200]},
-                                     "random_state": {"values": [21, 22, 23, 24, 25, 26, 27, 28]}
-                                     }
-                      })
+params = {'objective': 'rank:ndcg',
+          'reg_lambda' : .21,
+          'subsample': 0.4,
+          'gamma': .001,
+          'eval_metric': ['map','ndcg','ndcg@5','ndcg@10','rmse','auc']}
 
+model_l2r = xgboost.XGBRanker(**params)
 
+model_l2r.fit(X = feats_entrna,
+              y = labels_entrna,
+              qid = qids_entrna,
+              eval_set = [(feats_entrna, labels_entrna), 
+                          (feats_valida, labels_valida)],
+              eval_qid = [qids_entrna,
+                          qids_valida,],
+              verbose = False)
 
+evals_result = model_l2r.evals_result()
 
-
-
-
+print('Los 5 últimos:')
+print()
+print(f"MAPs (entrenamiento): {evals_result['validation_0']['map'][-5:]}")
+print(f"NDCGs (entrenamiento): {evals_result['validation_0']['ndcg'][-5:]}")
+print(f"NDCG@5s (entrenamiento): {evals_result['validation_0']['ndcg@5'][-5:]}")
+print(f"NDCG@10s (entrenamiento): {evals_result['validation_0']['ndcg@10'][-5:]}")
+print(f"RMSEs (entrenamiento): {evals_result['validation_0']['rmse'][-5:]}")
+print(f"AUCs (entrenamiento): {evals_result['validation_0']['auc'][-5:]}")
+print()
+print(f"MAPs (validación): {evals_result['validation_1']['map'][-5:]}")
+print(f"NDCGs (validación): {evals_result['validation_1']['ndcg'][-5:]}")
+print(f"NDCG@5s (validación): {evals_result['validation_1']['ndcg@5'][-5:]}")
+print(f"NDCG@10s (validación): {evals_result['validation_1']['ndcg@10'][-5:]}")
+print(f"RMSEs (validación): {evals_result['validation_1']['rmse'][-5:]}")
+print(f"AUCs (validación): {evals_result['validation_1']['auc'][-5:]}")    
