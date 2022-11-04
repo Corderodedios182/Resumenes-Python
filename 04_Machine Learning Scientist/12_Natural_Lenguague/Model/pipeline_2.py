@@ -28,8 +28,6 @@ datos = vectorizing_data(datos_a_procesar = datos,
                          model_w2v = model_w2v,
                          pdt = ProcesadorDeTexto()).reset_index()
 
-datos["index"] = datos.index
-
 #-- exploratoryData --#
 exploratoryDataframe(datos)
 
@@ -39,8 +37,8 @@ datos_model = datos.iloc[:,[5,7,8,9,6]]
 # Características del conjunto de datos
 
 x_entrna, y_entrna, x_valida, y_valida, x_prueba, y_prueba = split_data(datos_a_dividir = datos,
-                                                                        p_explr_prueba = .80,
-                                                                        p_entrn_valida = .80,
+                                                                        p_explr_prueba = .8,
+                                                                        p_entrn_valida = .8,
                                                                         )
 
 noms_cols_caracts = ['TEXTO_COMPARACION_VECT',
@@ -157,3 +155,24 @@ results = pd.merge(datos,
 #Generar rank por modelo.
 
 
+#Safety Analytics : Función def output_predict(data_input):
+    
+#    return lista_ordenada_consulta
+
+#TextUpdater : Nuevo entrenamiento
+
+    
+#Porcentaje de datos representativos
+#    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

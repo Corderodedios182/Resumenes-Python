@@ -8,7 +8,8 @@ from settings import *
 
 def reordering_data(
     datos_a_corregir: pd.DataFrame,
-) -> pd.DataFrame:
+    evaluaciones_sin_ceros = True
+    ) -> pd.DataFrame:
     """Aquí se quitan las filas duplicadas que no recibieron retroalimentación,
     a excepción de la primera que no recibió retroalimentación.
 
@@ -23,24 +24,18 @@ def reordering_data(
         _description_
     """
     
-    datos_a_corregir.reset_index(
-        inplace=True,
-    )
-    
-    datos_a_corregir.drop(
-        columns=[ 'ID_EVALUACION'], #'index',
-        inplace=True,
-    )
+    if evaluaciones_sin_ceros == True:
+        datos_a_corregir = datos_a_corregir[datos_a_corregir["EVALUACION"] != 0]
+        
+    datos_a_corregir["AM-C_EVENTO"] = datos_a_corregir["AM"].astype(str) + "-" + datos_a_corregir["C_EVENTO"].astype(str)
+    datos_a_corregir["AM-TEXTO_COMPARACION"] = datos_a_corregir["AM"].astype(str) + "-" + datos_a_corregir["TEXTO_COMPARACION"].astype(str)
 
     # Ordenamiento de datos para facilitar el uso de métodos con grupos
-    datos_a_corregir.sort_values(
-        by=['TEXTO_COMPARACION', 'F_CREATE', 'INDICE'],
-        inplace=True,
-    )
+    datos_a_corregir.sort_values(by = ['AM','TEXTO_COMPARACION', 'F_CREATE', 'INDICE'], inplace=True)
     
     # Diccionarios utilitarios, ayudarán más adelante a dar formato a ciertos datos
     textos_comparacion_únicos = \
-        datos_a_corregir['TEXTO_COMPARACION'].unique()
+        datos_a_corregir['AM-TEXTO_COMPARACION'].unique()
         
     textos_comparacion_únicos = \
         textos_comparacion_únicos.tolist()
@@ -58,14 +53,15 @@ def reordering_data(
     # Creación de la columna QID (de identificación), utiliza valores de la columna
     # TEXTO_COMPARACION reemplazando el texto de consulta por un número
     datos_a_corregir['QID'] = \
-        datos_a_corregir[['TEXTO_COMPARACION']].replace(
+        datos_a_corregir[['AM-TEXTO_COMPARACION']].replace(
             to_replace=textos_comparacion_idx_dicc,
         )
-
+        
     # Reordenamiento de columnas
     datos_a_corregir = \
         datos_a_corregir[
             [
+                'AM-C_EVENTO',
                 'TEXTO_COMPARACION',
                 'C_EVENTO', 
                 'D_EVENTO',
@@ -95,8 +91,13 @@ def reordering_data(
             keep='first',
         )
     
-    datos_a_corregir['rank'] = datos_a_corregir.groupby("QID")["EVALUACION"].rank('first', ascending =  False)
-    datos_a_corregir.loc[datos_a_corregir['rank'] > 21, 'rank'] = 22
+    datos_a_corregir['RANK'] = datos_a_corregir.groupby("QID")["EVALUACION"].rank('first', ascending =  False)
+    datos_a_corregir.loc[datos_a_corregir['RANK'] > 10, 'RANK'] = 11
+    
+    datos_a_corregir = datos_a_corregir.sort_values(["QID","RANK"])
+    datos_a_corregir = datos_a_corregir.reset_index()
+    datos_a_corregir["INDEX"] = datos_a_corregir.index
+    datos_a_corregir.drop('index', axis=1, inplace=True)
     
     return datos_a_corregir
 
