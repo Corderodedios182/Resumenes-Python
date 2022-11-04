@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Oct 25 12:20:51 2022
+Created on Tue Nov  1 12:39:02 2022
 
 @author: cflorelu
 """
@@ -28,164 +28,18 @@ datos = vectorizing_data(datos_a_procesar = datos,
                          model_w2v = model_w2v,
                          pdt = ProcesadorDeTexto()).reset_index()
 
-datos["index"] = datos.index
-
 #-- exploratoryData --#
 exploratoryDataframe(datos)
 
 #-- dataModeling --#
-datos_model = datos.iloc[:,[5,7,8,9,6]]
-
-#-- ModeloXGboostRegresor --#
-import numpy as np
-from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import cross_val_score, KFold
-from sklearn.metrics import mean_squared_error as MSE
-from xgboost import XGBRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import ndcg_score
-
-x = []
-y = []
-
-X_train, X_test, y_train, y_test = train_test_split(x, y, random_state=2)
-
-kfold = KFold(n_splits=5, shuffle=True, random_state=2)
-
-def cross_val(model):
-    scores = cross_val_score(model, X_train, y_train, scoring='neg_root_mean_squared_error', cv=kfold)
-    rmse = (-scores.mean())
-    return rmse
-
-cross_val(XGBRegressor(missing=-999.0))
-
-X_train_2, X_test_2, y_train_2, y_test_2 = train_test_split(X_train, y_train, random_state=2)
-
-def n_estimators(model):
-
-    eval_set = [(X_test_2, y_test_2)]
-    eval_metric="rmse"
-    model.fit(X_train_2, y_train_2,
-              eval_metric=eval_metric,
-              eval_set=eval_set,
-              early_stopping_rounds=100)
-
-    y_pred = model.predict(X_test_2)
-
-    rmse = MSE(y_test_2, y_pred)**0.5
-
-    return rmse  
-
-n_estimators(XGBRegressor(n_estimators=5000, missing=-999.0)) #Mejor n_estimator = 10
-
-def grid_search(params, reg=XGBRegressor(missing=-999.0)):
-
-    grid_reg = GridSearchCV(reg, params, scoring='neg_mean_squared_error', cv=kfold)
-    grid_reg.fit(X_train, y_train)
-
-    best_params = grid_reg.best_params_
-
-    print("Best params:", best_params)
-
-    best_score = np.sqrt(-grid_reg.best_score_)
-
-    print("Best score:", best_score)
-    
-grid_search(params={'max_depth':[1, 2, 3, 4, 6, 7, 8], #max_depth = 8
-                    'n_estimators':[10]}) 
-
-grid_search(params={'max_depth':[8],
-                    'min_child_weight':[1,2,3,4,5], #min_child_weight = 2
-                    'n_estimators':[10]}) 
-
-grid_search(params={'max_depth':[8],
-                    'min_child_weight':[1,2],
-                    'subsample':[0.5, 0.6, 0.7, 0.8, 0.9], #sumbsample = .9
-                    'n_estimators':[8,9]})
-
-grid_search(params={'max_depth':[8],
-                    'min_child_weight':[1, 2], #min_child_weight = 2
-                    'subsample':[0.9],
-                    'colsample_bytree':[0.5, 0.6, 0.7, 0.8, 0.9, 1], #colsample = 1
-                    'n_estimators':[10]})
-
-grid_search(params={'max_depth':[8],
-                    'min_child_weight':[2],
-                    'subsample':[.9],
-                    'colsample_bytree':[1],
-                    'colsample_bylevel':[0.6, 0.7, 0.8, 0.9, 1],
-                    'colsample_bynode':[0.6, 0.7, 0.8, 0.9, 1],
-                    'n_estimators':[10]})
-
-#Best model
-model = XGBRegressor(max_depth = 8,
-                     min_child_weight = 2,
-                     subsample = 0.9,
-                     n_estimators = 10,
-                     colsample_bytree = 1,
-                     gamma = 2,
-                     missing = -999.0)
-
-model.fit(X_train, y_train)
-
-# --Reporting-- #
-#Datos de entrenamiento
-y_pred_train = model.predict(X_train)
-
-y_train = pd.DataFrame(y_train)
-y_train = y_train.reset_index()
-
-results_train = pd.concat([y_train,
-                           pd.DataFrame(y_pred_train, columns = ["y_pred_train"])], axis = 1)
-
-results_train["y_pred_train"] = round(results_train["y_pred_train"])
-
-rmse = MSE(results_train["y_pred_train"], results_train["QID"])**0.5 ; rmse
-
-ndcg_score(np.asarray([results_train["QID"]]),
-           np.asarray([results_train["y_pred_train"]]))
-
-#Datos de test
-y_pred_test = model.predict(X_test)
-
-y_test = pd.DataFrame(y_test)
-y_test = y_test.reset_index()
-
-results = pd.concat([y_test,
-                     pd.DataFrame(y_pred_test, columns = ["y_pred_test"])], axis = 1)
-
-results["y_pred_test"] = round(results["y_pred_test"])
-
-rmse = MSE(results["y_pred_test"], results["QID"])**0.5 ; rmse
-
-ndcg_score(np.asarray([results["QID"]]),
-           np.asarray([results["y_pred_test"]]))
-
-results["diferencia_qid"] = results["QID"] - results["y_pred_test"]
-
-results["y_pred_test"] = results["y_pred_test"].astype(int)
-
-diccionario = datos.loc[:,["QID","TEXTO_COMPARACION"]].drop_duplicates()
-
-results = pd.merge(
-                   results,
-                   diccionario,
-                   left_on = 'y_pred_test',
-                   right_on = 'QID',
-                   how = 'inner')
-
-results = pd.merge(
-                   datos.loc[:,["index","QID","TEXTO_COMPARACION","D_EVENTO","SIMILITUD","EVALUACION","rank"]],
-                   results,
-                   on = 'index',
-                   how = 'right')
-
-# Características del conjunto de datos
-
 x_entrna, y_entrna, x_valida, y_valida, x_prueba, y_prueba = split_data(datos_a_dividir = datos,
-                                                                        p_explr_prueba = .90,
-                                                                        p_entrn_valida = .89,
+                                                                        p_explr_prueba = .8,
+                                                                        p_entrn_valida = .8,
                                                                         )
+
+noms_cols_caracts = ['TEXTO_COMPARACION_VECT',
+                     'D_EVENTO_VECT',
+                     'DIFF_TEXTO_COMPARACION_VECT_&_D_EVENTO_VECT']
 
 # Entrenamiento
 ## Listas con las características, etiquetas y grupos utilizadas en el entrenamiento del modelo
@@ -210,77 +64,56 @@ feats_prueba, labels_prueba, qids_prueba = \
         noms_cols_caracts=noms_cols_caracts,
     )
 
-# -- LGBMRanker -- #
-
-import numpy as np
-import pandas as pd
-import lightgbm
-
-import lightgbm as lgb
-ranker = lgb.LGBMRanker()
-
-print("X_tr:", feats_entrna.shape)
-print("y_tr:", labels_entrna.shape)
-print("group_tr:", qids_entrna.shape)
-
-print("X_t:", feats_prueba.shape)
-print("y_t", labels_prueba.shape)
-print("group_t", qids_prueba.shape)
-
-
-ranker.fit(feats_entrna,
-           labels_entrna,
-           group = qids_entrna,
-           eval_set=[(feats_prueba, labels_prueba)],
-           eval_group=[qids_prueba],
-           eval_at=[1],
-           verbose=True,
-           callbacks=[lgb.reset_parameter(learning_rate=lambda x: 0.95 ** x * 0.1)]
-           )
-
-model = lightgbm.LGBMRanker(objective="lambdarank",
-                            metric="ndcg")
-
-model.fit(X = feats_entrna,
-          y = labels_entrna,
-          group = qids_entrna,
-          eval_set=[(feats_valida, labels_valida)],
-          eval_group=[qids_valida],
-          eval_at=1,
-          verbose=1)
-
 #-- ModeloXGbosstRanker --#
-from sklearn.metrics import average_precision_score, ndcg_score
-from sklearn.model_selection import GroupShuffleSplit
-import xgboost
+# -- Hypertuning -- #
+
+from sklearn.model_selection import cross_val_score, KFold
+from sklearn.model_selection import GridSearchCV
+
+kfold = KFold(n_splits=5, shuffle=True, random_state=2)
+
+def grid_search(params, xgboost = xgboost.XGBRanker()):
+
+    grid_model = GridSearchCV(xgboost,
+                              params,
+                              scoring = 'roc_auc',
+                              cv = kfold)
+    
+    grid_model.fit(X = feats_entrna,
+                   y = labels_entrna,
+                   qid = qids_entrna,
+                   eval_set = [(feats_entrna, labels_entrna), 
+                               (feats_valida, labels_valida)],
+                   eval_qid = [qids_entrna,
+                               qids_valida],
+                   verbose = False)
+
+    best_params = grid_model.best_params_
+    print("Best params:", best_params)
+
+grid_search(params = {'objective': ['rank:ndcg'],
+                      'reg_lambda' : [.10, .15, .21, .25, 30],
+                      'subsample':[0.3, 0.4, 0.5, 0.6, 0.7]})
+
+# -- BestModel metrics -- #
 
 params = {'objective': 'rank:ndcg',
-          'eval_metric': [
-                'map',
-                'ndcg',
-                'ndcg@5',
-                'ndcg@10',
-                'rmse',
-                'auc']
-    }
+          'reg_lambda' : .21,
+          'subsample': 0.4,
+          'gamma': .001,
+          'missing': -99,
+          'eval_metric': ['map','ndcg','ndcg@5','ndcg@10','rmse','auc']}
 
 model_l2r = xgboost.XGBRanker(**params)
 
 model_l2r.fit(X = feats_entrna,
               y = labels_entrna,
               qid = qids_entrna,
-              eval_set = \
-                  [
-                      (feats_entrna, labels_entrna), 
-                      (feats_valida, labels_valida)
-                      ],
-                  eval_qid = \
-                      [
-                          qids_entrna,
-                          qids_valida,
-                          ],
-                      verbose = False,
-                      )
+              eval_set = [(feats_entrna, labels_entrna), 
+                          (feats_valida, labels_valida)],
+              eval_qid = [qids_entrna,
+                          qids_valida],
+              verbose = False)
 
 evals_result = model_l2r.evals_result()
 
@@ -298,6 +131,55 @@ print(f"NDCGs (validación): {evals_result['validation_1']['ndcg'][-5:]}")
 print(f"NDCG@5s (validación): {evals_result['validation_1']['ndcg@5'][-5:]}")
 print(f"NDCG@10s (validación): {evals_result['validation_1']['ndcg@10'][-5:]}")
 print(f"RMSEs (validación): {evals_result['validation_1']['rmse'][-5:]}")
-print(f"AUCs (validación): {evals_result['validation_1']['auc'][-5:]}")
+print(f"AUCs (validación): {evals_result['validation_1']['auc'][-5:]}")    
 
-#-- reporting-- #
+# -- Reportes -- #
+
+#Entrenamiento
+
+x_entrna["RANK"] = labels_entrna
+x_entrna["y_pred"] = model_l2r.predict(feats_entrna)
+x_entrna["rank_l2r"] = (x_entrna.groupby('QID')['y_pred']
+                                .rank(method='dense', ascending = True)
+                                .astype(int))
+x_entrna["datos"] = 'entrenamiento'
+
+#Valida
+x_valida["RANK"] = labels_valida
+x_valida["y_pred"] = model_l2r.predict(feats_valida)
+x_valida["rank_l2r"] = (x_valida.groupby('QID')['y_pred']
+                                .rank(method='dense', ascending = True)
+                                .astype(int))
+x_valida["datos"] = 'valida'
+
+#Prueba
+x_prueba["RANK"] = labels_prueba
+x_prueba["y_pred"] = model_l2r.predict(feats_prueba)
+x_prueba["rank_l2r"] = (x_prueba.groupby('QID')['y_pred']
+                                .rank(method='dense', ascending = True)
+                                .astype(int))
+x_prueba["datos"] = 'prueba'
+
+#Union
+datos_l2r = pd.concat([x_entrna, x_valida, x_prueba])
+
+#Safety Analytics : Función def output_predict(data_input):
+    
+#    return lista_ordenada_consulta
+
+#TextUpdater : Nuevo entrenamiento
+    
+#Porcentaje de datos representativos
+#    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

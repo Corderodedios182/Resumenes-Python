@@ -83,17 +83,17 @@ def split_data(
         datos_explra.iloc[inds_X_valida]
     
     x_entrna = \
-        datos_entrna.loc[:, ~datos_entrna.columns.isin(['rank'])]
+        datos_entrna.loc[:, ~datos_entrna.columns.isin(['RANK'])]
     y_entrna = \
-        datos_entrna.loc[:,  datos_entrna.columns.isin(['rank'])]
+        datos_entrna.loc[:,  datos_entrna.columns.isin(['RANK'])]
     x_valida = \
-        datos_valida.loc[:, ~datos_valida.columns.isin(['rank'])]
+        datos_valida.loc[:, ~datos_valida.columns.isin(['RANK'])]
     y_valida = \
-        datos_valida.loc[:,  datos_valida.columns.isin(['rank'])]
+        datos_valida.loc[:,  datos_valida.columns.isin(['RANK'])]
     x_prueba = \
-        datos_prueba.loc[:, ~datos_prueba.columns.isin(['rank'])]
+        datos_prueba.loc[:, ~datos_prueba.columns.isin(['RANK'])]
     y_prueba = \
-        datos_prueba.loc[:,  datos_prueba.columns.isin(['rank'])]
+        datos_prueba.loc[:,  datos_prueba.columns.isin(['RANK'])]
     
     return x_entrna, y_entrna, x_valida, y_valida, x_prueba, y_prueba
 
@@ -135,7 +135,7 @@ Tuple[
     
     caracts= np.hstack(caracts)
     
-    etiquetas = y['rank']
+    etiquetas = y['RANK']
     qids = X['QID']
     
     return caracts, etiquetas, qids
