@@ -61,6 +61,7 @@ def reordering_data(
     datos_a_corregir = \
         datos_a_corregir[
             [
+                'AM',
                 'AM-C_EVENTO',
                 'TEXTO_COMPARACION',
                 'C_EVENTO', 
