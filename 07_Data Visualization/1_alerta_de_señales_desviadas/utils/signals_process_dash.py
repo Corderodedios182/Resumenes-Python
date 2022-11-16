@@ -23,7 +23,7 @@ else:
     ddf_may.to_csv("data/ddf_dash/ddf_may.csv").round(1)
 
 #Datos señales
-status_extraction = extract_month_azure.azure_data_extraction()
+status_extraction = extract_month_azure.azure_data_extraction(day_gregorate = '2022-11-14', days = 2)
 
 if status_extraction == 'No se descargaron archivos de azure':
    ddf_signal = dd.read_csv("data/ddf_signal/*.csv").compute()
@@ -66,7 +66,7 @@ ddf_complete = dd.merge(ddf_time,
 
 ddf_complete = pd.melt(ddf_complete,
                        id_vars = ["Time","second_day",'groupings'],
-                       value_vars = ddf_complete.columns[1:])
+                       value_vars = ddf_complete.columns[2:-4])
 
 ddf_complete["groupings"] = ddf_complete["groupings"].fillna("no_group")
 ddf_complete["value"] = ddf_complete["value"].fillna(0)

@@ -2,6 +2,7 @@
 """
 """
 from settings import *
+
 from text_utils import *
 
 import importData as importData
@@ -11,7 +12,9 @@ import dataModeling as dataModeling
 #from trainModel import *
 #from reporting import *
 
-datos = importData.read_data(settings.ruta_feedback)
+datos = importData.read_data(ruta_feedback)
+
+#Colocar vector tokenizado sin los textos.
 
 #-- preprocessing --#
 datos = preprocessing.reordering_data(datos_a_corregir= datos)
@@ -56,7 +59,7 @@ def grid_search(params, xgboost = xgboost.XGBRanker()):
 
     grid_model = GridSearchCV(xgboost,
                               params,
-                              scoring = 'roc_auc',
+                              scoring = 'top_k_accuracy',
                               cv = kfold)
     
     grid_model.fit(X = feats_entrna,
@@ -143,14 +146,13 @@ x_prueba["datos"] = 'prueba'
 #Union
 datos_l2r = pd.concat([x_entrna, x_valida, x_prueba])
 
+#ndcg por grupo y otro color similitud (W2V)
+
 ejemplo_l2r = datos_l2r[(datos_l2r["QID"] == 140) | (datos_l2r["QID"] == 49) | (datos_l2r["QID"] == 39) | (datos_l2r["QID"] == 101)].loc[:,['AM', 'TEXTO_COMPARACION', 'D_EVENTO',
                                                                                                                                              'SIMILITUD', 'EVALUACION', 'QID', 'RANK', 'rank_l2r','datos']]
-
-
 ejemplo_l2r.columns = ['AM', 'TEXTO_COMPARACION', 'D_EVENTO', 'SIMILITUD', 'EVALUACION', 'QID',
                        'rank_original', 'rank_l2r', 'datos']
 
 entrenamiento_ejemplo = ejemplo_l2r[ejemplo_l2r["datos"] == 'entrenamiento']
 valida_ejemplo = ejemplo_l2r[ejemplo_l2r["datos"] == 'valida']
 prueba_ejemplo = ejemplo_l2r[ejemplo_l2r["datos"] == 'prueba']
-
