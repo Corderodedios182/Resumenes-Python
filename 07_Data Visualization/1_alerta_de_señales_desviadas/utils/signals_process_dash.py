@@ -2,6 +2,8 @@
 """
 Procesos y dataframes outputs de análisis señales.
 """
+#Comentar cada parte del proceso cada csv.
+#Objetivo de funciones.
 #Data Processing
 import dask.dataframe as dd
 import pandas as pd
@@ -12,6 +14,7 @@ from utils import values
 from utils import transformations
 from utils import extract_month_azure
 
+#-Lectura de datos-#
 #Datos comparativos
 if "ddf_may.csv" in os.listdir("data/ddf_dash"):
     ddf_may = dd.read_csv("data/ddf_dash/ddf_may.csv").compute().round(1)
@@ -23,7 +26,7 @@ else:
     ddf_may.to_csv("data/ddf_dash/ddf_may.csv").round(1)
 
 #Datos señales
-status_extraction = extract_month_azure.azure_data_extraction(day_gregorate = '2022-11-14', days = 2)
+status_extraction = extract_month_azure.azure_data_extraction(day_gregorate = '2022-11-14', days = 7)
 
 if status_extraction == 'No se descargaron archivos de azure':
    ddf_signal = dd.read_csv("data/ddf_signal/*.csv").compute()
@@ -34,9 +37,10 @@ else:
 ddf_signal['Time'] = pd.to_datetime(ddf_signal['Time'])
 
 #--Prueba de una señal (Comentar si no se está debuggeando)
-#ddf_may = ddf_may[ddf_may["signal"].str.contains("hsa12_group_hsarefgauts_C1075052603")]
-#ddf_signal = ddf_signal.loc[:, ['Time','groupings',"hsa12_group_hsarefgauts_C1075052603"]]
+ddf_may = ddf_may[ddf_may["signal"].str.contains("hsa12_group_hsarefgauts_C1075052603")]
+ddf_signal = ddf_signal.loc[:, ['Time','groupings',"hsa12_group_hsarefgauts_C1075052603"]]
 
+#-Procesamiento-#
 #--- Status_completitud (Para todas la señales)
 ddf_time = transformations.seconds_day(min(ddf_signal['Time'].dt.floor("D")),
                                        max(ddf_signal['Time'].dt.floor("D"))).compute()
@@ -142,6 +146,7 @@ df_ideal = df_ideal.loc[:,["country", "day", "signal","Grado_may22","Velocidad_m
 
 df_dash = df_ideal.loc[:,["country",'day', 'key_group','signal','pct_val_no_zeros', 'within_range', 'Cantidad_CU_may22','indicator']]
 
+#--Inputs para el Dash --#
 df_ideal.to_csv("data/ddf_dash/df_ideal.csv", index=False)
 df_dash.to_csv("data/ddf_dash/df_dash.csv", index=False)
 comparative_sample.to_csv("data/ddf_dash/df_comparative_sample.csv", index=False)
