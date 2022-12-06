@@ -6,9 +6,11 @@ Solo se tomaron eventos con evaluaciones !=0
 
 @author: cflorelu
 """
+import os
+os.chdir(r"Code\DataPrep\utils")
 from settings import *
-from text_utils import *
 
+os.chdir(r"C:\Users\cflorelu\Documents\1_Ternium\Resumenes-Python\04_Machine Learning Scientist\12_Natural_Lenguague\Model\Code\DataPrep")
 import importData as importData
 import preprocessing as preprocessing
 import exploratoryData as exploratoryData
@@ -16,6 +18,7 @@ import dataModeling as dataModeling
 #from trainModel import *
 #from reporting import *
 
+os.chdir(r"C:\Users\cflorelu\Documents\1_Ternium\Resumenes-Python\04_Machine Learning Scientist\12_Natural_Lenguague\Model")
 datos = importData.read_data(ruta_feedback)
 
 #-- preprocessing --#
@@ -77,7 +80,7 @@ model_l2r.fit(X = feats_entrna,
 x_entrna["RANK"] = labels_entrna
 x_entrna["y_pred"] = model_l2r.predict(feats_entrna)
 x_entrna["rank_l2r"] = (x_entrna.groupby('QID')['y_pred']
-                                .rank(method='dense', ascending = False)
+                                .rank(method='dense', ascending = True)
                                 .astype(int))
 x_entrna["datos"] = 'entrenamiento'
 
@@ -85,7 +88,7 @@ x_entrna["datos"] = 'entrenamiento'
 x_valida["RANK"] = labels_valida
 x_valida["y_pred"] = model_l2r.predict(feats_valida)
 x_valida["rank_l2r"] = (x_valida.groupby('QID')['y_pred']
-                                .rank(method='dense', ascending = False)
+                                .rank(method='dense', ascending = True)
                                 .astype(int))
 x_valida["datos"] = 'valida'
 
@@ -93,7 +96,7 @@ x_valida["datos"] = 'valida'
 x_prueba["RANK"] = labels_prueba
 x_prueba["y_pred"] = model_l2r.predict(feats_prueba)
 x_prueba["rank_l2r"] = (x_prueba.groupby('QID')['y_pred']
-                                .rank(method='dense', ascending = False)
+                                .rank(method='dense', ascending = True)
                                 .astype(int))
 x_prueba["datos"] = 'prueba'
 
@@ -166,7 +169,7 @@ rel = sns.displot(df,
 
 rel.fig.subplots_adjust(top = .9)
 rel.fig.suptitle('{}'.format(experimento))
-
+plt.show()
 #############################################
 #¿Como está rankeando los valores + , - y 0?#
 #############################################
@@ -180,29 +183,23 @@ datos_l2r = datos_l2r.drop(['TEXTO_COMPARACION_VECT', 'D_EVENTO_VECT',
                             'DIFF_TEXTO_COMPARACION_VECT_&_D_EVENTO_VECT'], axis = 1)
 
 datos_l2r.loc[datos_l2r["EVALUACION_SUM"] == 0, 'eventos_sin_feedback'] = 1
-
-datos_l2r["dif_rank_l2r"] = abs(datos_l2r["RANK"] - datos_l2r["rank_l2r"])
-datos_l2r["dif_rank_w2v"] = abs(datos_l2r["RANK"] - datos_l2r["rank_w2v"])
-
 datos_l2r["n_eventos"] = 1
 
-tmp = datos_l2r.groupby(["QID","datos"], as_index = False).agg({"dif_rank_l2r":"sum",
-                                                                "dif_rank_w2v":"sum",
-                                                                "n_eventos":"count",
+tmp = datos_l2r.groupby(["QID","datos"], as_index = False).agg({"n_eventos":"count",
                                                                 "eventos_sin_feedback":"sum"})
 
 tmp["evento_feedback"] = tmp["n_eventos"] - tmp["eventos_sin_feedback"]
+tmp = tmp.loc[:,["QID", "n_eventos","eventos_sin_feedback","evento_feedback"]]
+tmp = pd.concat([df_ndcg, tmp], axis = 1).loc[:,["QID","ndcg_l2r","ndcg_w2v","eventos_sin_feedback","evento_feedback","n_eventos"]]
 
-tmp = tmp.loc[:,["QID", "eventos_sin_feedback","evento_feedback"]]
+tmp = tmp.sort_values("n_eventos").reset_index().reset_index()
 
-tmp = pd.concat([df_ndcg, tmp], axis = 1).loc[:,["QID","ndcg_l2r","ndcg_w2v","eventos_sin_feedback","evento_feedback"]]
-
-tmp = tmp.melt(value_vars = ["eventos_sin_feedback","evento_feedback", "ndcg_l2r",  "ndcg_w2v"], id_vars = "QID")
+#tmp = tmp.melt(value_vars = ["eventos_sin_feedback","evento_feedback", "ndcg_l2r",  "ndcg_w2v"], id_vars = "level_0")
 
 #Gráfica
 
-ndcg = tmp[tmp["variable"].str.contains('ndcg')]
-conteo = tmp[~(tmp["variable"].str.contains('ndcg'))]
+#ndcg = tmp[tmp["variable"].str.contains('ndcg')]
+#conteo = tmp[~(tmp["variable"].str.contains('ndcg'))].sort_values("value")
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -213,22 +210,24 @@ ax1 = sns.set_style(style=None, rc=None )
 
 fig, ax1 = plt.subplots(figsize=(20,10))
 
-sns.lineplot(data = ndcg[ndcg["QID"] < 50],
-             x = 'QID',
-             y = 'value',
-             hue = 'variable',
-             marker='o',
-             sort = False,
-             ax = ax1,
-             )
+#plot_order = conteo["level_0"].unique()
+
+sns.barplot(data = tmp,
+            x = 'level_0',
+            y = 'eventos_feedback',
+            #hue = 'variable',
+            alpha = 0.5,
+            ax = ax1,)
+
 ax2 = ax1.twinx()
 
-sns.barplot(data = conteo[conteo["QID"] < 50],
-            x = 'QID',
-            y = 'value',
-            hue = 'variable',
-            alpha = 0.5,
-            ax = ax2)
+sns.lineplot(data = tmp,
+             x = 'level_0',
+             y = 'ndcg_l2r',
+             marker='o',
+             ax = ax2,
+             )
+
 plt.show()
 
 ejemplo = datos_l2r[datos_l2r["QID"] == 75].drop(["y_pred","datos","valor_ceros","n_eventos","rank_w2v","dif_rank_w2v","SIMILITUD"], axis = 1)
@@ -247,21 +246,3 @@ ejemplo = datos_l2r[datos_l2r["QID"] == 75].drop(["y_pred","datos","valor_ceros"
 #entrenamiento_ejemplo = ejemplo_l2r[ejemplo_l2r["datos"] == 'entrenamiento']
 #valida_ejemplo = ejemplo_l2r[ejemplo_l2r["datos"] == 'valida']
 #prueba_ejemplo = ejemplo_l2r[ejemplo_l2r["datos"] == 'prueba']
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
